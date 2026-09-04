@@ -267,10 +267,29 @@ export const cancelBooking = async (req, res) => {
       });
     }
 
-    if (booking.status !== "pending") {
+    if (booking.status !== "pending" && booking.status !== "approved") {
       return res.status(400).json({
-        message: "Only pending bookings can be cancelled",
+        message: "This booking cannot be cancelled",
       });
+    }
+
+    const container = await Container.findById(booking.container);
+
+    if (!container) {
+      return res.status(404).json({
+        message: "Container not found",
+      });
+    }
+
+    if (booking.status === "approved") {
+      container.availableWeightCapacity += booking.requestedWeight;
+      container.availableVolumeCapacity += booking.requestedVolume;
+
+      if (container.status === "full") {
+        container.status = "available";
+      }
+
+      await container.save();
     }
 
     booking.status = "cancelled";
