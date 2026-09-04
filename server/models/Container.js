@@ -1,5 +1,30 @@
 import mongoose from "mongoose";
 
+const trackingPointSchema = new mongoose.Schema(
+  {
+    latitude: {
+      type: Number,
+      required: true
+    },
+
+    longitude: {
+      type: Number,
+      required: true
+    },
+
+    locationName: {
+      type: String,
+      trim: true
+    },
+
+    timestamp: {
+      type: Date,
+      default: Date.now
+    }
+  },
+  { _id: false }
+);
+
 const containerSchema = new mongoose.Schema(
   {
     provider: {
@@ -76,6 +101,31 @@ const containerSchema = new mongoose.Schema(
         "cancelled"
       ],
       default: "available"
+    },
+
+    currentLocation: {
+      latitude: {
+        type: Number
+      },
+
+      longitude: {
+        type: Number
+      },
+
+      locationName: {
+        type: String,
+        trim: true
+      },
+
+      updatedAt: {
+        type: Date,
+        default: Date.now
+      }
+    },
+
+    trackingHistory: {
+      type: [trackingPointSchema],
+      default: []
     }
   },
   {
