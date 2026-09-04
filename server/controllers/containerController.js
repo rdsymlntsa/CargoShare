@@ -203,3 +203,81 @@ export const deliverContainer = async (req, res) => {
     });
   }
 };
+
+export const updateContainerLocation = async (req, res) => {
+  try {
+    const { latitude, longitude, locationName } = req.body;
+
+    if (latitude === undefined || longitude === undefined) {
+      return res.status(400).json({
+        message: "Latitude and longitude are required",
+      });
+    }
+
+    if (typeof latitude !== "number" || typeof longitude !== "number") {
+      return res.status(400).json({
+        message: "Latitude and longitude must be numbers",
+      });
+    }
+
+    if (latitude < -90 || latitude > 90) {
+      return res.status(400).json({
+        message: "Invalid latitude",
+      });
+    }
+
+    if (longitude < -180 || longitude > 180) {
+      return res.status(400).json({
+        message: "Invalid longitude",
+      });
+    }
+
+    const container = await Container.findById(req.params.id);
+
+    if (!container) {
+      return res.status(404).json({
+        message: "Container not found",
+      });
+    }
+
+    if (container.provider.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        message: "You are not authorized to update this container",
+      });
+    }
+
+    if (container.status !== "in-transit") {
+      return res.status(400).json({
+        message: "Location can only be updated while container is in transit",
+      });
+    }
+
+    const trackingPoint = {
+      latitude,
+      longitude,
+      locationName,
+      timestamp: new Date(),
+    };
+
+    container.currentLocation = {
+      latitude,
+      longitude,
+      locationName,
+      updatedAt: trackingPoint.timestamp,
+    };
+
+    container.trackingHistory.push(trackingPoint);
+
+    await container.save();
+
+    res.status(200).json({
+      message: "Container location updated successfully",
+      currentLocation: container.currentLocation,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
