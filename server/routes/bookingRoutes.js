@@ -4,6 +4,7 @@ import {
   getMyBookings,
   getBookingById,
   approveBooking,
+  getProviderBookings,
 } from "../controllers/bookingController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
@@ -17,6 +18,12 @@ router.get(
   authMiddleware,
   roleMiddleware(["exporter"]),
   getBookingById,
+);
+router.get(
+  "/provider/requests",
+  authMiddleware,
+  roleMiddleware(["provider"]),
+  getProviderBookings,
 );
 router.patch(
   "/:id/approve",

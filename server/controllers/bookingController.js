@@ -179,3 +179,31 @@ export const approveBooking = async (req, res) => {
     });
   }
 };
+
+export const getProviderBookings = async (req, res) => {
+  try {
+    const containers = await Container.find({
+      provider: req.user._id,
+    }).select("_id");
+
+    const containerIds = containers.map((container) => container._id);
+
+    const bookings = await Booking.find({
+      container: { $in: containerIds },
+      status: "pending",
+    })
+      .populate("exporter", "name email phone")
+      .populate("container")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      message: "Booking requests fetched successfully",
+      bookings,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
