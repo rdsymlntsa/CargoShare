@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import authMiddleware from "./middleware/authMiddleware.js";
+import containerRoutes from "./routes/containerRoutes.js";
 
 dotenv.config();
 
@@ -11,12 +12,13 @@ const app = express();
 app.use(express.json());
 connectDB();
 app.use("/api/auth", authRoutes);
+app.use("/api/containers", containerRoutes);
 
-app.get("/api/auth/me", authMiddleware, (req, res) => {
-  res.json({
-    user: req.user,
-  });
-});
+// app.get("/api/auth/me", authMiddleware, (req, res) => {
+//   res.json({
+//     user: req.user,
+//   });
+// });
 
 app.get("/", (req, res) => {
   res.json({
