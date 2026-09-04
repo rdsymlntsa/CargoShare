@@ -70,3 +70,60 @@ export const createContainer = async (req, res) => {
     });
   }
 };
+
+export const getContainers = async (req, res) => {
+  try {
+    const { origin, destination, departureDate, minWeight, minVolume } =
+      req.query;
+
+    const filter = {
+      status: "available",
+    };
+
+    if (origin) {
+      filter.origin = { $regex: origin, $options: "i" };
+    }
+
+    if (destination) {
+      filter.destination = { $regex: destination, $options: "i" };
+    }
+
+    if (departureDate) {
+      const startDate = new Date(departureDate);
+      const endDate = new Date(departureDate);
+
+      endDate.setDate(endDate.getDate() + 1);
+
+      filter.departureDate = {
+        $gte: startDate,
+        $lt: endDate,
+      };
+    }
+
+    if (minWeight) {
+      filter.availableWeightCapacity = {
+        $gte: Number(minWeight),
+      };
+    }
+
+    if (minVolume) {
+      filter.availableVolumeCapacity = {
+        $gte: Number(minVolume),
+      };
+    }
+
+    const containers = await Container.find(filter)
+      .populate("provider", "name email phone")
+      .sort({ departureDate: 1 });
+
+    res.json({
+      count: containers.length,
+      containers,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
