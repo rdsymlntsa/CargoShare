@@ -110,3 +110,72 @@ export const getBookingById = async (req, res) => {
     });
   }
 };
+
+export const approveBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({
+        message: "Booking not found",
+      });
+    }
+
+    if (booking.status !== "pending") {
+      return res.status(400).json({
+        message: "Only pending bookings can be approved",
+      });
+    }
+
+    const container = await Container.findById(booking.container);
+
+    if (!container) {
+      return res.status(404).json({
+        message: "Container not found",
+      });
+    }
+
+    if (container.provider.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        message: "You are not authorized to approve this booking",
+      });
+    }
+
+    if (booking.requestedWeight > container.availableWeightCapacity) {
+      return res.status(400).json({
+        message: "Insufficient weight capacity",
+      });
+    }
+
+    if (booking.requestedVolume > container.availableVolumeCapacity) {
+      return res.status(400).json({
+        message: "Insufficient volume capacity",
+      });
+    }
+
+    container.availableWeightCapacity -= booking.requestedWeight;
+    container.availableVolumeCapacity -= booking.requestedVolume;
+
+    if (
+      container.availableWeightCapacity === 0 ||
+      container.availableVolumeCapacity === 0
+    ) {
+      container.status = "full";
+    }
+
+    booking.status = "approved";
+
+    await container.save();
+    await booking.save();
+
+    res.status(200).json({
+      message: "Booking approved successfully",
+      booking,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};

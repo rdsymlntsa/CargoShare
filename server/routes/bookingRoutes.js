@@ -3,6 +3,7 @@ import {
   createBooking,
   getMyBookings,
   getBookingById,
+  approveBooking,
 } from "../controllers/bookingController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
@@ -16,6 +17,12 @@ router.get(
   authMiddleware,
   roleMiddleware(["exporter"]),
   getBookingById,
+);
+router.patch(
+  "/:id/approve",
+  authMiddleware,
+  roleMiddleware(["provider"]),
+  approveBooking,
 );
 
 export default router;
