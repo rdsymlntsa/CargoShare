@@ -2,19 +2,25 @@ import express from "express";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+import authMiddleware from "./middleware/authMiddleware.js";
 
 dotenv.config();
 
 const app = express();
 
 app.use(express.json());
-app.use("/api/auth",authRoutes);
-
 connectDB();
+app.use("/api/auth", authRoutes);
+
+app.get("/api/auth/me", authMiddleware, (req, res) => {
+  res.json({
+    user: req.user,
+  });
+});
 
 app.get("/", (req, res) => {
   res.json({
-    message: "CargoShare API is running"
+    message: "CargoShare API is running",
   });
 });
 
