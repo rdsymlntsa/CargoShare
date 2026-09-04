@@ -128,8 +128,6 @@ export const getContainers = async (req, res) => {
   }
 };
 
-import Container from "../models/Container.js";
-
 export const departContainer = async (req, res) => {
   try {
     const container = await Container.findById(req.params.id);
@@ -146,10 +144,7 @@ export const departContainer = async (req, res) => {
       });
     }
 
-    if (
-      container.status !== "available" &&
-      container.status !== "full"
-    ) {
+    if (container.status !== "available" && container.status !== "full") {
       return res.status(400).json({
         message: "Container cannot depart in its current status",
       });
@@ -161,6 +156,44 @@ export const departContainer = async (req, res) => {
 
     res.status(200).json({
       message: "Container is now in transit",
+      container,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const deliverContainer = async (req, res) => {
+  try {
+    const container = await Container.findById(req.params.id);
+
+    if (!container) {
+      return res.status(404).json({
+        message: "Container not found",
+      });
+    }
+
+    if (container.provider.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        message: "You are not authorized to deliver this container",
+      });
+    }
+
+    if (container.status !== "in-transit") {
+      return res.status(400).json({
+        message: "Only containers in transit can be delivered",
+      });
+    }
+
+    container.status = "delivered";
+
+    await container.save();
+
+    res.status(200).json({
+      message: "Container delivered successfully",
       container,
     });
   } catch (error) {

@@ -3,6 +3,7 @@ import {
   createContainer,
   getContainers,
   departContainer,
+  deliverContainer,
 } from "../controllers/containerController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
@@ -16,6 +17,12 @@ router.patch(
   authMiddleware,
   roleMiddleware(["provider"]),
   departContainer,
+);
+router.patch(
+  "/:id/deliver",
+  authMiddleware,
+  roleMiddleware(["provider"]),
+  deliverContainer,
 );
 
 export default router;
