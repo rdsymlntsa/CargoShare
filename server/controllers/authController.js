@@ -3,20 +3,22 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
 const generateToken = (userId) => {
-  return jwt.sign(
-    { userId },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, role } = req.body;
 
     if (!name || !email || !password || !phone) {
       return res.status(400).json({
-        message: "All fields are required"
+        message: "All fields are required",
+      });
+    }
+
+    if (role && !["exporter", "provider"].includes(role)) {
+      return res.status(400).json({
+        message: "Invalid role",
       });
     }
 
@@ -24,7 +26,7 @@ export const registerUser = async (req, res) => {
 
     if (existingUser) {
       return res.status(400).json({
-        message: "User already exists"
+        message: "User already exists",
       });
     }
 
@@ -34,7 +36,8 @@ export const registerUser = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      phone
+      phone,
+      role: role || "exporter",
     });
 
     const token = generateToken(user._id);
@@ -47,14 +50,13 @@ export const registerUser = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
-
   } catch (error) {
     res.status(500).json({
       message: "Server error",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -63,22 +65,25 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
+    }
+
     const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(401).json({
-        message: "Invalid email or password"
+        message: "Invalid email or password",
       });
     }
 
-    const isPasswordCorrect = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
     if (!isPasswordCorrect) {
       return res.status(401).json({
-        message: "Invalid email or password"
+        message: "Invalid email or password",
       });
     }
 
@@ -92,14 +97,13 @@ export const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
-
   } catch (error) {
     res.status(500).json({
       message: "Server error",
-      error: error.message
+      error: error.message,
     });
   }
 };
