@@ -1,11 +1,13 @@
-const providerMiddleware = (req, res, next) => {
-  if (req.user.role !== "provider") {
-    return res.status(403).json({
-      message: "Only providers can perform this action",
-    });
-  }
+const roleMiddleware = (allowedRoles) => {
+  return (req, res, next) => {
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        message: "You do not have permission to perform this action",
+      });
+    }
 
-  next();
+    next();
+  };
 };
 
-export default providerMiddleware;
+export default roleMiddleware;
