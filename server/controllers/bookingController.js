@@ -253,3 +253,38 @@ export const rejectBooking = async (req, res) => {
     });
   }
 };
+
+export const cancelBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findOne({
+      _id: req.params.id,
+      exporter: req.user._id,
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        message: "Booking not found",
+      });
+    }
+
+    if (booking.status !== "pending") {
+      return res.status(400).json({
+        message: "Only pending bookings can be cancelled",
+      });
+    }
+
+    booking.status = "cancelled";
+
+    await booking.save();
+
+    res.status(200).json({
+      message: "Booking cancelled successfully",
+      booking,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};

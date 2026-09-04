@@ -6,6 +6,7 @@ import {
   getProviderBookings,
   approveBooking,
   rejectBooking,
+  cancelBooking,
 } from "../controllers/bookingController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
@@ -37,6 +38,12 @@ router.patch(
   authMiddleware,
   roleMiddleware(["provider"]),
   rejectBooking,
+);
+router.patch(
+  "/:id/cancel",
+  authMiddleware,
+  roleMiddleware(["exporter"]),
+  cancelBooking,
 );
 
 export default router;
