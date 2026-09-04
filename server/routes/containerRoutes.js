@@ -5,6 +5,7 @@ import {
   departContainer,
   deliverContainer,
   updateContainerLocation,
+  getContainerTracking,
 } from "../controllers/containerController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
@@ -30,6 +31,11 @@ router.patch(
   authMiddleware,
   roleMiddleware(["provider"]),
   updateContainerLocation
+);
+router.get(
+  "/:id/tracking",
+  authMiddleware,
+  getContainerTracking
 );
 
 export default router;
