@@ -65,3 +65,48 @@ export const createBooking = async (req, res) => {
     });
   }
 };
+
+export const getMyBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find({
+      exporter: req.user._id,
+    })
+      .populate("container")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      message: "Bookings fetched successfully",
+      bookings,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const getBookingById = async (req, res) => {
+  try {
+    const booking = await Booking.findOne({
+      _id: req.params.id,
+      exporter: req.user._id,
+    }).populate("container");
+
+    if (!booking) {
+      return res.status(404).json({
+        message: "Booking not found",
+      });
+    }
+
+    res.status(200).json({
+      message: "Booking fetched successfully",
+      booking,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
