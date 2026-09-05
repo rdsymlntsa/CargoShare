@@ -5,6 +5,7 @@ import authRoutes from "./routes/authRoutes.js";
 import authMiddleware from "./middleware/authMiddleware.js";
 import containerRoutes from "./routes/containerRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ connectDB();
 app.use("/api/auth", authRoutes);
 app.use("/api/containers", containerRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/admin", adminRoutes);
 
 // app.get("/api/auth/me", authMiddleware, (req, res) => {
 //   res.json({
