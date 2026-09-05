@@ -2,6 +2,8 @@ import express from "express";
 import {
   createContainer,
   getContainers,
+  getMyContainers,
+  getMyContainerById,
   departContainer,
   deliverContainer,
   updateContainerLocation,
@@ -14,6 +16,19 @@ const router = express.Router();
 
 router.post("/", authMiddleware, roleMiddleware(["provider"]), createContainer);
 router.get("/", authMiddleware, getContainers);
+router.get(
+  "/my",
+  authMiddleware,
+  roleMiddleware(["provider"]),
+  getMyContainers,
+);
+
+router.get(
+  "/my/:id",
+  authMiddleware,
+  roleMiddleware(["provider"]),
+  getMyContainerById,
+);
 router.patch(
   "/:id/depart",
   authMiddleware,
@@ -30,12 +45,8 @@ router.patch(
   "/:id/location",
   authMiddleware,
   roleMiddleware(["provider"]),
-  updateContainerLocation
+  updateContainerLocation,
 );
-router.get(
-  "/:id/tracking",
-  authMiddleware,
-  getContainerTracking
-);
+router.get("/:id/tracking", authMiddleware, getContainerTracking);
 
 export default router;

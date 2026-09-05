@@ -367,3 +367,46 @@ export const getContainerTracking = async (req, res) => {
     });
   }
 };
+
+export const getMyContainers = async (req, res) => {
+  try {
+    const containers = await Container.find({
+      provider: req.user._id,
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      message: "Your containers fetched successfully",
+      containers,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const getMyContainerById = async (req, res) => {
+  try {
+    const container = await Container.findOne({
+      _id: req.params.id,
+      provider: req.user._id,
+    });
+
+    if (!container) {
+      return res.status(404).json({
+        message: "Container not found",
+      });
+    }
+
+    res.status(200).json({
+      message: "Container fetched successfully",
+      container,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
