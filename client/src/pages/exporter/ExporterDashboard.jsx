@@ -1,7 +1,7 @@
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
-import { logoutUser } from "../../../features/auth/authSlice.js";
+import { logoutUser } from "../../features/auth/authSlice.js";
 
 const ExporterDashboard = () => {
   const dispatch = useDispatch();

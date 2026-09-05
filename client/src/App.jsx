@@ -3,14 +3,15 @@ import { useDispatch } from "react-redux";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import { getCurrentUser } from "./features/auth/authSlice.js";
-import ContainerList from "./pages/auth/exporter/ContainerList.jsx";
+import ContainerList from "./pages/exporter/ContainerList.jsx";
 
 import Login from "./pages/auth/Login.jsx";
 import Register from "./pages/auth/Register.jsx";
 
-import ExporterDashboard from "./pages/auth/exporter/ExporterDashboard.jsx";
-import ProviderDashboard from "./pages/auth/provider/ProviderDashboard.jsx";
-import AdminDashboard from "./pages/auth/admin/AdminDashboard.jsx";
+import ExporterDashboard from "./pages//exporter/ExporterDashboard.jsx";
+import ProviderDashboard from "./pages/provider/ProviderDashboard.jsx";
+import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
+import ContainerDetails from "./pages/exporter/ContainerDetails.jsx";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import RoleProtectedRoute from "./components/RoleProtectedRoute.jsx";
@@ -44,6 +45,15 @@ const App = () => {
           element={
             <RoleProtectedRoute allowedRoles={["exporter"]}>
               <ContainerList />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/exporter/containers/:id"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter"]}>
+              <ContainerDetails />
             </RoleProtectedRoute>
           }
         />
