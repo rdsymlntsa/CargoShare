@@ -1,20 +1,17 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
 import { getCurrentUser } from "./features/auth/authSlice.js";
 import ContainerList from "./pages/exporter/ContainerList.jsx";
-
 import Login from "./pages/auth/Login.jsx";
 import Register from "./pages/auth/Register.jsx";
-
 import ExporterDashboard from "./pages//exporter/ExporterDashboard.jsx";
 import ProviderDashboard from "./pages/provider/ProviderDashboard.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import ContainerDetails from "./pages/exporter/ContainerDetails.jsx";
 import BookingForm from "./pages/exporter/BookingForm.jsx";
 import MyBookings from "./pages/exporter/MyBookings.jsx";
-
+import BookingRequests from "./pages/provider/BookingRequests.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import RoleProtectedRoute from "./components/RoleProtectedRoute.jsx";
 
@@ -84,6 +81,15 @@ const App = () => {
           element={
             <RoleProtectedRoute allowedRoles={["provider"]}>
               <ProviderDashboard />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/provider/bookings"
+          element={
+            <RoleProtectedRoute allowedRoles={["provider"]}>
+              <BookingRequests />
             </RoleProtectedRoute>
           }
         />
