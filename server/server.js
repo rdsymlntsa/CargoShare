@@ -16,7 +16,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://YOUR-VERCEL-DOMAIN.vercel.app",
+      "https://cargoshare-green.vercel.app",
     ],
     credentials: true,
   }),
