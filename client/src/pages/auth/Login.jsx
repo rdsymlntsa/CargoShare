@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../../features/auth/authSlice.js";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const { loading, error } = useSelector((state) => state.auth);
 
@@ -19,10 +21,22 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    dispatch(loginUser(formData));
+    const result = await dispatch(loginUser(formData));
+
+    if (loginUser.fulfilled.match(result)) {
+      const role = result.payload.user.role;
+
+      if (role === "exporter") {
+        navigate("/exporter/dashboard");
+      } else if (role === "provider") {
+        navigate("/provider/dashboard");
+      } else if (role === "admin") {
+        navigate("/admin/dashboard");
+      }
+    }
   };
 
   return (
@@ -32,9 +46,7 @@ const Login = () => {
           CargoShare
         </h1>
 
-        <p className="mb-8 text-center text-gray-500">
-          Login to your account
-        </p>
+        <p className="mb-8 text-center text-gray-500">Login to your account</p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
