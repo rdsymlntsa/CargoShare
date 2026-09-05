@@ -7,18 +7,20 @@ import containerRoutes from "./routes/containerRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
-
 const app = express();
 
 app.use(
   cors({
     origin: "http://localhost:5173",
+    credentials: true,
   }),
 );
 
 app.use(express.json());
+app.use(cookieParser());
 connectDB();
 app.use("/api/auth", authRoutes);
 app.use("/api/containers", containerRoutes);

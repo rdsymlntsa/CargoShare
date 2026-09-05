@@ -2,6 +2,15 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
+const setAuthCookie = (res, token) => {
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+};
+
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
@@ -42,9 +51,10 @@ export const registerUser = async (req, res) => {
 
     const token = generateToken(user._id);
 
+    setAuthCookie(res, token);
+
     res.status(201).json({
       message: "User registered successfully",
-      token,
       user: {
         id: user._id,
         name: user.name,
@@ -89,9 +99,10 @@ export const loginUser = async (req, res) => {
 
     const token = generateToken(user._id);
 
+    setAuthCookie(res, token);
+
     res.json({
       message: "Login successful",
-      token,
       user: {
         id: user._id,
         name: user.name,
@@ -99,6 +110,31 @@ export const loginUser = async (req, res) => {
         phone: user.phone,
         role: user.role,
       },
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const logoutUser = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+  });
+
+  res.status(200).json({
+    message: "Logout successful",
+  });
+};
+
+export const getCurrentUser = async (req, res) => {
+  try {
+    res.status(200).json({
+      user: req.user,
     });
   } catch (error) {
     res.status(500).json({
