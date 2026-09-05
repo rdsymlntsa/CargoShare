@@ -1,15 +1,19 @@
-import { useSelector } from 'react-redux'
-import Login from "./pages/auth/Login"
-function App() {
-     const auth = useSelector((state) => state.auth);
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-  console.log(auth);
+import Login from "./pages/auth/Login.jsx";
+import Register from "./pages/auth/Register.jsx";
 
+const App = () => {
   return (
-    <Login>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-    </Login>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
-}
+};
 
-export default App
+export default App;

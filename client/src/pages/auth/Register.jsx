@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { loginUser } from "../../features/auth/authSlice.js";
+import { registerUser } from "../../features/auth/authSlice.js";
 
-const Login = () => {
+const Register = () => {
   const dispatch = useDispatch();
 
   const { loading, error } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
+    name: "",
     email: "",
     password: "",
+    phone: "",
+    role: "exporter",
   });
 
   const handleChange = (e) => {
@@ -22,7 +25,7 @@ const Login = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    dispatch(loginUser(formData));
+    dispatch(registerUser(formData));
   };
 
   return (
@@ -32,11 +35,25 @@ const Login = () => {
           CargoShare
         </h1>
 
-        <p className="mb-8 text-center text-gray-500">
-          Login to your account
-        </p>
+        <p className="mb-8 text-center text-gray-500">Create your account</p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Name
+            </label>
+
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-teal-500"
+              placeholder="Enter your name"
+            />
+          </div>
+
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
               Email
@@ -69,6 +86,38 @@ const Login = () => {
             />
           </div>
 
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Phone
+            </label>
+
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-teal-500"
+              placeholder="Enter your phone number"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Account Type
+            </label>
+
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 outline-none focus:border-teal-500"
+            >
+              <option value="exporter">Exporter</option>
+              <option value="provider">Provider</option>
+            </select>
+          </div>
+
           {error && (
             <p className="rounded-lg bg-red-100 px-4 py-3 text-sm text-red-600">
               {error}
@@ -80,7 +129,7 @@ const Login = () => {
             disabled={loading}
             className="w-full rounded-lg bg-teal-600 px-4 py-3 font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? "Creating account..." : "Register"}
           </button>
         </form>
       </div>
@@ -88,4 +137,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;
