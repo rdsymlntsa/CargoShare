@@ -12,6 +12,7 @@ import ExporterDashboard from "./pages//exporter/ExporterDashboard.jsx";
 import ProviderDashboard from "./pages/provider/ProviderDashboard.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import ContainerDetails from "./pages/exporter/ContainerDetails.jsx";
+import BookingForm from "./pages/exporter/BookingForm.jsx";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import RoleProtectedRoute from "./components/RoleProtectedRoute.jsx";
@@ -54,6 +55,15 @@ const App = () => {
           element={
             <RoleProtectedRoute allowedRoles={["exporter"]}>
               <ContainerDetails />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/exporter/containers/:id/book"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter"]}>
+              <BookingForm />
             </RoleProtectedRoute>
           }
         />
