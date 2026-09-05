@@ -18,10 +18,12 @@ export const createContainer = async (req, res) => {
 
     // Check required fields
     if (
+      !containerNumber ||
       !origin ||
       !destination ||
       !departureDate ||
-      !totalWeightCapacity ||
+      !arrivalDate ||
+      totalWeightCapacity === undefined ||
       availableWeightCapacity === undefined ||
       totalVolumeCapacity === undefined ||
       availableVolumeCapacity === undefined ||
@@ -32,16 +34,83 @@ export const createContainer = async (req, res) => {
       });
     }
 
-    // Validate capacity
-    if (availableWeightCapacity > totalWeightCapacity) {
+    // Convert values to numbers
+    const totalWeight = Number(totalWeightCapacity);
+    const availableWeight = Number(availableWeightCapacity);
+    const totalVolume = Number(totalVolumeCapacity);
+    const availableVolume = Number(availableVolumeCapacity);
+    const price = Number(pricePerKg);
+
+    // Validate numeric values
+    if (
+      !Number.isFinite(totalWeight) ||
+      !Number.isFinite(availableWeight) ||
+      !Number.isFinite(totalVolume) ||
+      !Number.isFinite(availableVolume) ||
+      !Number.isFinite(price)
+    ) {
+      return res.status(400).json({
+        message: "Capacity and price values must be valid numbers",
+      });
+    }
+
+    // Validate weight capacity
+    if (totalWeight <= 0 || availableWeight <= 0) {
+      return res.status(400).json({
+        message: "Weight capacity must be greater than 0",
+      });
+    }
+
+    if (availableWeight > totalWeight) {
       return res.status(400).json({
         message: "Available weight capacity cannot exceed total capacity",
       });
     }
 
-    if (availableVolumeCapacity > totalVolumeCapacity) {
+    // Validate volume capacity
+    if (totalVolume <= 0 || availableVolume <= 0) {
+      return res.status(400).json({
+        message: "Volume capacity must be greater than 0",
+      });
+    }
+
+    if (availableVolume > totalVolume) {
       return res.status(400).json({
         message: "Available volume capacity cannot exceed total capacity",
+      });
+    }
+
+    // Validate price
+    if (price <= 0) {
+      return res.status(400).json({
+        message: "Price per kg must be greater than 0",
+      });
+    }
+
+    // Validate dates
+    const departure = new Date(departureDate);
+    const arrival = new Date(arrivalDate);
+
+    if (Number.isNaN(departure.getTime()) || Number.isNaN(arrival.getTime())) {
+      return res.status(400).json({
+        message: "Invalid departure or arrival date",
+      });
+    }
+
+    if (arrival <= departure) {
+      return res.status(400).json({
+        message: "Arrival date must be after departure date",
+      });
+    }
+
+    // Check for duplicate container number
+    const existingContainer = await Container.findOne({
+      containerNumber,
+    });
+
+    if (existingContainer) {
+      return res.status(400).json({
+        message: "Container number already exists",
       });
     }
 
@@ -51,21 +120,28 @@ export const createContainer = async (req, res) => {
       containerNumber,
       origin,
       destination,
-      departureDate,
-      arrivalDate,
-      totalWeightCapacity,
-      availableWeightCapacity,
-      totalVolumeCapacity,
-      availableVolumeCapacity,
-      pricePerKg,
+      departureDate: departure,
+      arrivalDate: arrival,
+      totalWeightCapacity: totalWeight,
+      availableWeightCapacity: availableWeight,
+      totalVolumeCapacity: totalVolume,
+      availableVolumeCapacity: availableVolume,
+      pricePerKg: price,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Container listed successfully",
       container,
     });
   } catch (error) {
-    res.status(500).json({
+    // Safety net for MongoDB unique index
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: "Container number already exists",
+      });
+    }
+
+    return res.status(500).json({
       message: "Server error",
       error: error.message,
     });
@@ -390,7 +466,7 @@ export const getContainerById = async (req, res) => {
   try {
     const container = await Container.findById(req.params.id).populate(
       "provider",
-      "name email phone"
+      "name email phone",
     );
 
     if (!container) {

@@ -48,11 +48,7 @@ router.patch(
   roleMiddleware(["provider"]),
   updateContainerLocation,
 );
-router.get(
-  "/:id",
-  authMiddleware,
-  getContainerById
-);
 router.get("/:id/tracking", authMiddleware, getContainerTracking);
+router.get("/:id", authMiddleware, getContainerById);
 
 export default router;

@@ -14,6 +14,7 @@ import MyBookings from "./pages/exporter/MyBookings.jsx";
 import BookingRequests from "./pages/provider/BookingRequests.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import RoleProtectedRoute from "./components/RoleProtectedRoute.jsx";
+import CreateContainer from "./pages/provider/CreateContainer.jsx";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -90,6 +91,15 @@ const App = () => {
           element={
             <RoleProtectedRoute allowedRoles={["provider"]}>
               <BookingRequests />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/provider/containers/create"
+          element={
+            <RoleProtectedRoute allowedRoles={["provider"]}>
+              <CreateContainer />
             </RoleProtectedRoute>
           }
         />
