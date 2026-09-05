@@ -1,12 +1,12 @@
 import { useSelector } from 'react-redux'
 function App() {
-   const reduxState = useSelector((state) => state);
+     const auth = useSelector((state) => state.auth);
 
-  console.log(reduxState);
+  console.log(auth);
 
   return (
-    <div className="flex bg-contain  min-h-screen items-center justify-center" 
-     style={{ backgroundImage: "url('/image.jpeg')" }}>
+    <div className="flex bg-black  min-h-screen items-center justify-center" 
+     >
       <h1 className="text-6xl text-teal-500 font-bold">
         CargoShare
       </h1>
