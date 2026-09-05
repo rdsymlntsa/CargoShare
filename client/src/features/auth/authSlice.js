@@ -29,6 +29,21 @@ export const loginUser = createAsyncThunk(
   },
 );
 
+export const getCurrentUser = createAsyncThunk(
+  "auth/getCurrentUser",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/auth/me");
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Authentication failed",
+      );
+    }
+  },
+);
+
 export const logoutUser = createAsyncThunk(
   "auth/logoutUser",
   async (_, { rejectWithValue }) => {
@@ -42,29 +57,17 @@ export const logoutUser = createAsyncThunk(
   },
 );
 
-export const getCurrentUser = createAsyncThunk(
-  "auth/getCurrentUser",
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await api.get("/auth/me");
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Authentication failed",
-      );
-    }
-  },
-);
-
 const initialState = {
   user: null,
   isAuthenticated: false,
   loading: false,
   error: null,
+  authChecked: false,
 };
 
 const authSlice = createSlice({
   name: "auth",
+
   initialState,
 
   reducers: {
@@ -75,6 +78,7 @@ const authSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
+
       // Register
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
@@ -85,11 +89,14 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;
         state.isAuthenticated = true;
+        state.authChecked = true;
+        state.error = null;
       })
 
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.authChecked = true;
       })
 
       // Login
@@ -102,12 +109,17 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;
         state.isAuthenticated = true;
+        state.authChecked = true;
+        state.error = null;
       })
 
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.authChecked = true;
       })
+
+      // Get current user
       .addCase(getCurrentUser.pending, (state) => {
         state.loading = true;
       })
@@ -116,6 +128,7 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;
         state.isAuthenticated = true;
+        state.authChecked = true;
         state.error = null;
       })
 
@@ -123,11 +136,26 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = null;
         state.isAuthenticated = false;
+        state.authChecked = true;
       })
+
+      // Logout
+      .addCase(logoutUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+
       .addCase(logoutUser.fulfilled, (state) => {
+        state.loading = false;
         state.user = null;
         state.isAuthenticated = false;
+        state.authChecked = true;
         state.error = null;
+      })
+
+      .addCase(logoutUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
