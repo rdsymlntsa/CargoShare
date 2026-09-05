@@ -13,6 +13,7 @@ import ProviderDashboard from "./pages/provider/ProviderDashboard.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import ContainerDetails from "./pages/exporter/ContainerDetails.jsx";
 import BookingForm from "./pages/exporter/BookingForm.jsx";
+import MyBookings from "./pages/exporter/MyBookings.jsx";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import RoleProtectedRoute from "./components/RoleProtectedRoute.jsx";
@@ -64,6 +65,15 @@ const App = () => {
           element={
             <RoleProtectedRoute allowedRoles={["exporter"]}>
               <BookingForm />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/exporter/bookings"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter"]}>
+              <MyBookings />
             </RoleProtectedRoute>
           }
         />
