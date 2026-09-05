@@ -281,6 +281,15 @@ export const cancelBooking = async (req, res) => {
       });
     }
 
+    if (
+      booking.status === "approved" &&
+      (container.status === "in-transit" || container.status === "delivered")
+    ) {
+      return res.status(400).json({
+        message: "Approved booking cannot be cancelled after departure",
+      });
+    }
+
     if (booking.status === "approved") {
       container.availableWeightCapacity += booking.requestedWeight;
       container.availableVolumeCapacity += booking.requestedVolume;
