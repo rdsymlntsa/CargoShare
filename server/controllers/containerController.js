@@ -386,6 +386,31 @@ export const getMyContainers = async (req, res) => {
   }
 };
 
+export const getContainerById = async (req, res) => {
+  try {
+    const container = await Container.findById(req.params.id).populate(
+      "provider",
+      "name email phone"
+    );
+
+    if (!container) {
+      return res.status(404).json({
+        message: "Container not found",
+      });
+    }
+
+    res.status(200).json({
+      message: "Container fetched successfully",
+      container,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
 export const getMyContainerById = async (req, res) => {
   try {
     const container = await Container.findOne({

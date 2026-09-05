@@ -2,6 +2,7 @@ import express from "express";
 import {
   createContainer,
   getContainers,
+  getContainerById,
   getMyContainers,
   getMyContainerById,
   departContainer,
@@ -46,6 +47,11 @@ router.patch(
   authMiddleware,
   roleMiddleware(["provider"]),
   updateContainerLocation,
+);
+router.get(
+  "/:id",
+  authMiddleware,
+  getContainerById
 );
 router.get("/:id/tracking", authMiddleware, getContainerTracking);
 
