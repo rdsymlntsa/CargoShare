@@ -7,6 +7,13 @@ import { getCurrentUser } from "./features/auth/authSlice.js";
 import Login from "./pages/auth/Login.jsx";
 import Register from "./pages/auth/Register.jsx";
 
+import ExporterDashboard from "./pages/auth/exporter/ExporterDashboard.jsx";
+import ProviderDashboard from "./pages/auth/provider/ProviderDashboard.jsx";
+import AdminDashboard from "./pages/auth/admin/AdminDashboard.jsx";
+
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import RoleProtectedRoute from "./components/RoleProtectedRoute.jsx";
+
 const App = () => {
   const dispatch = useDispatch();
 
@@ -17,10 +24,45 @@ const App = () => {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
+        {/* Exporter */}
+        <Route
+          path="/exporter/dashboard"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter"]}>
+              <ExporterDashboard />
+            </RoleProtectedRoute>
+          }
+        />
+
+        {/* Provider */}
+        <Route
+          path="/provider/dashboard"
+          element={
+            <RoleProtectedRoute allowedRoles={["provider"]}>
+              <ProviderDashboard />
+            </RoleProtectedRoute>
+          }
+        />
+
+        {/* Admin */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <RoleProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </RoleProtectedRoute>
+          }
+        />
+
+        {/* Default */}
         <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* Unknown route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
