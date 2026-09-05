@@ -283,7 +283,8 @@ export const deliverContainer = async (req, res) => {
 
 export const updateContainerLocation = async (req, res) => {
   try {
-    const { latitude, longitude, locationName } = req.body;
+    const { id } = req.params;
+    const { latitude, longitude } = req.body;
 
     if (latitude === undefined || longitude === undefined) {
       return res.status(400).json({
@@ -291,25 +292,28 @@ export const updateContainerLocation = async (req, res) => {
       });
     }
 
-    if (typeof latitude !== "number" || typeof longitude !== "number") {
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       return res.status(400).json({
-        message: "Latitude and longitude must be numbers",
+        message: "Latitude and longitude must be valid numbers",
       });
     }
 
-    if (latitude < -90 || latitude > 90) {
+    if (lat < -90 || lat > 90) {
       return res.status(400).json({
-        message: "Invalid latitude",
+        message: "Latitude must be between -90 and 90",
       });
     }
 
-    if (longitude < -180 || longitude > 180) {
+    if (lng < -180 || lng > 180) {
       return res.status(400).json({
-        message: "Invalid longitude",
+        message: "Longitude must be between -180 and 180",
       });
     }
 
-    const container = await Container.findById(req.params.id);
+    const container = await Container.findById(id);
 
     if (!container) {
       return res.status(404).json({
@@ -325,34 +329,46 @@ export const updateContainerLocation = async (req, res) => {
 
     if (container.status !== "in-transit") {
       return res.status(400).json({
-        message: "Location can only be updated while container is in transit",
+        message: "Location can only be updated for in-transit containers",
       });
     }
 
-    const trackingPoint = {
-      latitude,
-      longitude,
-      locationName,
-      timestamp: new Date(),
-    };
+    const now = new Date();
 
+    // Update current location every time
     container.currentLocation = {
-      latitude,
-      longitude,
-      locationName,
-      updatedAt: trackingPoint.timestamp,
+      latitude: lat,
+      longitude: lng,
+      updatedAt: now,
     };
 
-    container.trackingHistory.push(trackingPoint);
+    // Save to tracking history only every 5 minutes
+    const lastHistoryPoint =
+      container.trackingHistory.length > 0
+        ? container.trackingHistory[container.trackingHistory.length - 1]
+        : null;
+
+    const shouldSaveHistory =
+      !lastHistoryPoint ||
+      now.getTime() - new Date(lastHistoryPoint.timestamp).getTime() >=
+        5 * 60 * 1000;
+
+    if (shouldSaveHistory) {
+      container.trackingHistory.push({
+        latitude: lat,
+        longitude: lng,
+        timestamp: now,
+      });
+    }
 
     await container.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Container location updated successfully",
-      currentLocation: container.currentLocation,
+      container,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server error",
       error: error.message,
     });

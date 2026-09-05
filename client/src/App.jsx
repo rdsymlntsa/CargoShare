@@ -15,6 +15,9 @@ import BookingRequests from "./pages/provider/BookingRequests.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import RoleProtectedRoute from "./components/RoleProtectedRoute.jsx";
 import CreateContainer from "./pages/provider/CreateContainer.jsx";
+import MyContainers from "./pages/provider/MyContainers.jsx";
+import ProviderContainerDetails from "./pages/provider/ProviderContainerDetails.jsx";
+import UpdateContainerLocation from "./pages/provider/UpdateContainerLocation.jsx";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -100,6 +103,33 @@ const App = () => {
           element={
             <RoleProtectedRoute allowedRoles={["provider"]}>
               <CreateContainer />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/provider/containers"
+          element={
+            <RoleProtectedRoute allowedRoles={["provider"]}>
+              <MyContainers />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/provider/containers/:id"
+          element={
+            <RoleProtectedRoute allowedRoles={["provider"]}>
+              <ProviderContainerDetails />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/provider/containers/:id/location"
+          element={
+            <RoleProtectedRoute allowedRoles={["provider"]}>
+              <UpdateContainerLocation />
             </RoleProtectedRoute>
           }
         />

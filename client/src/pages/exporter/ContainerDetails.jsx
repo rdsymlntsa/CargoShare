@@ -88,20 +88,24 @@ const ContainerDetails = () => {
         </div>
       </nav>
 
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
         <div className="rounded-xl bg-white p-6 shadow">
           {/* Header */}
-          <div className="flex flex-col justify-between gap-4 border-b pb-6 sm:flex-row sm:items-center">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <p className="text-sm text-gray-500">Container</p>
 
-              <h2 className="mt-1 text-3xl font-bold text-gray-800">
+              <h2 className="mt-1 text-2xl font-bold text-gray-800">
                 {container.containerNumber}
               </h2>
+
+              <p className="mt-1 text-gray-600">
+                {container.origin} → {container.destination}
+              </p>
             </div>
 
             <span
-              className={`w-fit rounded-full px-4 py-2 text-sm font-medium capitalize ${
+              className={`w-fit rounded-full px-3 py-1 text-sm font-medium capitalize ${
                 container.status === "available"
                   ? "bg-green-100 text-green-700"
                   : "bg-gray-100 text-gray-700"
@@ -111,121 +115,105 @@ const ContainerDetails = () => {
             </span>
           </div>
 
-          {/* Route */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-800">Route</h3>
+          {/* Container Information */}
+          <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="rounded-lg bg-gray-50 p-3">
+              <p className="text-xs text-gray-500">Departure</p>
 
-            <div className="mt-3 rounded-lg bg-gray-50 p-4">
-              <p className="text-lg font-medium text-gray-800">
-                {container.origin} → {container.destination}
+              <p className="mt-1 font-medium text-gray-800">
+                {new Date(container.departureDate).toLocaleDateString()}
               </p>
             </div>
-          </div>
 
-          {/* Schedule */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-800">Schedule</h3>
+            <div className="rounded-lg bg-gray-50 p-3">
+              <p className="text-xs text-gray-500">Arrival</p>
 
-            <div className="mt-3 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-lg bg-gray-50 p-4">
-                <p className="text-sm text-gray-500">Departure</p>
-
-                <p className="mt-1 font-medium text-gray-800">
-                  {new Date(container.departureDate).toLocaleDateString()}
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-gray-50 p-4">
-                <p className="text-sm text-gray-500">Arrival</p>
-
-                <p className="mt-1 font-medium text-gray-800">
-                  {new Date(container.arrivalDate).toLocaleDateString()}
-                </p>
-              </div>
+              <p className="mt-1 font-medium text-gray-800">
+                {new Date(container.arrivalDate).toLocaleDateString()}
+              </p>
             </div>
-          </div>
 
-          {/* Capacity */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-800">Capacity</h3>
+            <div className="rounded-lg bg-gray-50 p-3">
+              <p className="text-xs text-gray-500">Weight Available</p>
 
-            <div className="mt-3 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-lg bg-gray-50 p-4">
-                <p className="text-sm text-gray-500">Available Weight</p>
+              <p className="mt-1 font-medium text-gray-800">
+                {container.availableWeightCapacity} kg
+              </p>
 
-                <p className="mt-1 text-xl font-semibold text-gray-800">
-                  {container.availableWeightCapacity} kg
-                </p>
+              <p className="text-xs text-gray-500">
+                of {container.totalWeightCapacity} kg
+              </p>
+            </div>
 
-                <p className="mt-1 text-sm text-gray-500">
-                  of {container.totalWeightCapacity} kg
-                </p>
-              </div>
+            <div className="rounded-lg bg-gray-50 p-3">
+              <p className="text-xs text-gray-500">Volume Available</p>
 
-              <div className="rounded-lg bg-gray-50 p-4">
-                <p className="text-sm text-gray-500">Available Volume</p>
+              <p className="mt-1 font-medium text-gray-800">
+                {container.availableVolumeCapacity} m³
+              </p>
 
-                <p className="mt-1 text-xl font-semibold text-gray-800">
-                  {container.availableVolumeCapacity} m³
-                </p>
-
-                <p className="mt-1 text-sm text-gray-500">
-                  of {container.totalVolumeCapacity} m³
-                </p>
-              </div>
+              <p className="text-xs text-gray-500">
+                of {container.totalVolumeCapacity} m³
+              </p>
             </div>
           </div>
 
           {/* Pricing */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-800">Pricing</h3>
+          <div className="mt-3 rounded-lg bg-gray-50 p-3">
+            <p className="text-xs text-gray-500">Price per kg</p>
 
-            <div className="mt-3 rounded-lg bg-gray-50 p-4">
-              <p className="text-sm text-gray-500">Price per kg</p>
-
-              <p className="mt-1 text-xl font-semibold text-gray-800">
-                ₹{container.pricePerKg}
-              </p>
-            </div>
+            <p className="mt-1 font-semibold text-gray-800">
+              ₹{container.pricePerKg}
+            </p>
           </div>
 
           {/* Provider */}
           {container.provider && (
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold text-gray-800">Provider</h3>
+            <div className="mt-3 rounded-lg bg-gray-50 p-3">
+              <p className="text-xs font-medium text-gray-500">Provider</p>
 
-              <div className="mt-3 rounded-lg bg-gray-50 p-4">
-                <p className="font-medium text-gray-800">
-                  {container.provider.name}
-                </p>
+              <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div>
+                  <p className="text-xs text-gray-500">Name</p>
 
-                <p className="mt-1 text-sm text-gray-600">
-                  {container.provider.email}
-                </p>
+                  <p className="mt-1 text-sm font-medium text-gray-800">
+                    {container.provider.name}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-gray-500">Email</p>
+
+                  <p className="mt-1 break-all text-sm font-medium text-gray-800">
+                    {container.provider.email}
+                  </p>
+                </div>
 
                 {container.provider.phone && (
-                  <p className="mt-1 text-sm text-gray-600">
-                    {container.provider.phone}
-                  </p>
+                  <div>
+                    <p className="text-xs text-gray-500">Phone</p>
+
+                    <p className="mt-1 text-sm font-medium text-gray-800">
+                      {container.provider.phone}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* Book */}
-          <div className="mt-8 border-t pt-6">
-            <button
-              onClick={() =>
-                navigate(`/exporter/containers/${container._id}/book`)
-              }
-              disabled={container.status !== "available"}
-              className="w-full rounded-lg bg-teal-600 px-6 py-3 font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-            >
-              {container.status === "available"
-                ? "Book Container"
-                : "Container Not Available"}
-            </button>
-          </div>
+          {/* Book Container */}
+          <button
+            onClick={() =>
+              navigate(`/exporter/containers/${container._id}/book`)
+            }
+            disabled={container.status !== "available"}
+            className="mt-5 w-full rounded-lg bg-teal-600 px-6 py-3 font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+          >
+            {container.status === "available"
+              ? "Book Container"
+              : "Container Not Available"}
+          </button>
         </div>
       </main>
     </div>

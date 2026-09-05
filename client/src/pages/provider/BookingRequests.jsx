@@ -59,86 +59,117 @@ const BookingRequests = () => {
         </div>
       </nav>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        <h2 className="text-3xl font-bold text-gray-800">Booking Requests</h2>
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+        <h2 className="text-2xl font-bold text-gray-800">Booking Requests</h2>
 
-        <p className="mt-2 text-gray-600">
+        <p className="mt-1 text-gray-600">
           Review booking requests from exporters.
         </p>
 
         {error && (
-          <div className="mt-6 rounded-lg bg-red-100 px-4 py-3 text-red-600">
+          <div className="mt-5 rounded-lg bg-red-100 px-4 py-3 text-red-600">
             {error}
           </div>
         )}
 
         {bookings.length === 0 && !error && (
-          <div className="mt-8 rounded-xl bg-white p-8 text-center shadow">
+          <div className="mt-6 rounded-xl bg-white p-8 text-center shadow">
             <p className="text-gray-500">No pending booking requests.</p>
           </div>
         )}
 
-        <div className="mt-8 space-y-6">
+        <div className="mt-6 space-y-4">
           {bookings.map((booking) => (
-            <div key={booking._id} className="rounded-xl bg-white p-6 shadow">
-              <div className="flex flex-col justify-between gap-4 border-b pb-5 sm:flex-row sm:items-center">
+            <div key={booking._id} className="rounded-xl bg-white p-5 shadow">
+              {/* Header */}
+              <div className="flex flex-col justify-between gap-3 border-b pb-4 sm:flex-row sm:items-center">
                 <div>
-                  <p className="text-sm text-gray-500">Container</p>
+                  <p className="text-xs text-gray-500">Container Number</p>
 
-                  <h3 className="text-xl font-bold text-gray-800">
+                  <h3 className="mt-1 text-xl font-bold text-gray-800">
                     {booking.container?.containerNumber || "Container"}
                   </h3>
                 </div>
 
-                <span className="w-fit rounded-full bg-yellow-100 px-4 py-2 text-sm font-medium capitalize text-yellow-700">
+                <span className="w-fit rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium capitalize text-yellow-700">
                   {booking.status}
                 </span>
               </div>
 
-              <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                <div>
-                  <p className="text-sm text-gray-500">Exporter</p>
+              {/* Exporter */}
+              <div className="mt-4 rounded-lg bg-gray-50 p-4">
+                <p className="text-xs font-medium text-gray-500">Exporter</p>
 
-                  <p className="mt-1 font-semibold text-gray-800">
-                    {booking.exporter?.name || "Unknown"}
-                  </p>
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Name</p>
 
-                  <p className="mt-1 text-sm text-gray-600">
-                    {booking.exporter?.email}
-                  </p>
+                    <p className="mt-1 text-sm font-medium text-gray-800">
+                      {booking.exporter?.name || "Unknown"}
+                    </p>
+                  </div>
 
-                  <p className="mt-1 text-sm text-gray-600">
-                    {booking.exporter?.phone}
-                  </p>
-                </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Email</p>
 
-                <div>
-                  <p className="text-sm text-gray-500">Route</p>
+                    <p className="mt-1 break-all text-sm font-medium text-gray-800">
+                      {booking.exporter?.email || "Not provided"}
+                    </p>
+                  </div>
 
-                  <p className="mt-1 font-medium text-gray-800">
-                    {booking.container?.origin} →{" "}
-                    {booking.container?.destination}
-                  </p>
-                </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Phone</p>
 
-                <div>
-                  <p className="text-sm text-gray-500">Requested Weight</p>
-
-                  <p className="mt-1 font-medium text-gray-800">
-                    {booking.requestedWeight} kg
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-sm text-gray-500">Requested Volume</p>
-
-                  <p className="mt-1 font-medium text-gray-800">
-                    {booking.requestedVolume}
-                  </p>
+                    <p className="mt-1 text-sm font-medium text-gray-800">
+                      {booking.exporter?.phone || "Not provided"}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-col gap-3 border-t pt-6 sm:flex-row">
+              {/* Booking Details */}
+              <div className="mt-3 rounded-lg bg-gray-50 p-4">
+                <p className="text-xs font-medium text-gray-500">
+                  Booking Details
+                </p>
+
+                <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+                  <div>
+                    <p className="text-xs text-gray-500">Origin</p>
+
+                    <p className="mt-1 text-sm font-medium text-gray-800">
+                      {booking.container?.origin || "Not available"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-500">Destination</p>
+
+                    <p className="mt-1 text-sm font-medium text-gray-800">
+                      {booking.container?.destination || "Not available"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-500">Requested Weight</p>
+
+                    <p className="mt-1 text-sm font-medium text-gray-800">
+                      {booking.requestedWeight} kg
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-500">Requested Volume</p>
+
+                    <p className="mt-1 text-sm font-medium text-gray-800">
+                      {booking.requestedVolume} m³
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <button
                   onClick={() => handleApprove(booking._id)}
                   disabled={loading}

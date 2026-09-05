@@ -303,7 +303,12 @@ const containerSlice = createSlice({
 
       .addCase(updateContainerLocation.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentContainer = action.payload.container;
+
+        if (state.currentContainer) {
+          state.currentContainer.currentLocation =
+            action.payload.currentLocation;
+        }
+
         state.error = null;
       })
 
