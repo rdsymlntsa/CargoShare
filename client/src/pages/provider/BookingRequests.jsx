@@ -1,64 +1,37 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../services/api.js";
+import { useDispatch, useSelector } from "react-redux";
+
+import {
+  getProviderBookings,
+  approveBooking,
+  rejectBooking,
+  clearBookingError,
+} from "../../features/bookings/bookingSlice.js";
 
 const BookingRequests = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [actionLoading, setActionLoading] = useState(null);
-
-  const fetchBookings = async () => {
-    try {
-      setError("");
-
-      const response = await api.get("/bookings/provider/requests");
-
-      setBookings(response.data.bookings);
-    } catch (error) {
-      setError(
-        error.response?.data?.message || "Failed to fetch booking requests",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { bookings, loading, error } = useSelector((state) => state.bookings);
 
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    dispatch(getProviderBookings());
+
+    return () => {
+      dispatch(clearBookingError());
+    };
+  }, [dispatch]);
 
   const handleApprove = async (bookingId) => {
-    try {
-      setActionLoading(bookingId);
-
-      await api.patch(`/bookings/${bookingId}/approve`);
-
-      await fetchBookings();
-    } catch (error) {
-      setError(error.response?.data?.message || "Failed to approve booking");
-    } finally {
-      setActionLoading(null);
-    }
+    await dispatch(approveBooking(bookingId));
   };
 
   const handleReject = async (bookingId) => {
-    try {
-      setActionLoading(bookingId);
-
-      await api.patch(`/bookings/${bookingId}/reject`);
-
-      await fetchBookings();
-    } catch (error) {
-      setError(error.response?.data?.message || "Failed to reject booking");
-    } finally {
-      setActionLoading(null);
-    }
+    await dispatch(rejectBooking(bookingId));
   };
 
-  if (loading) {
+  if (loading && bookings.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-gray-600">Loading booking requests...</p>
@@ -168,18 +141,18 @@ const BookingRequests = () => {
               <div className="mt-6 flex flex-col gap-3 border-t pt-6 sm:flex-row">
                 <button
                   onClick={() => handleApprove(booking._id)}
-                  disabled={actionLoading === booking._id}
+                  disabled={loading}
                   className="rounded-lg bg-green-600 px-5 py-2 font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-400"
                 >
-                  {actionLoading === booking._id ? "Processing..." : "Approve"}
+                  {loading ? "Processing..." : "Approve"}
                 </button>
 
                 <button
                   onClick={() => handleReject(booking._id)}
-                  disabled={actionLoading === booking._id}
+                  disabled={loading}
                   className="rounded-lg bg-red-600 px-5 py-2 font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-400"
                 >
-                  {actionLoading === booking._id ? "Processing..." : "Reject"}
+                  {loading ? "Processing..." : "Reject"}
                 </button>
               </div>
             </div>

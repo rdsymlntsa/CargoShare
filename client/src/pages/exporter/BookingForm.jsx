@@ -1,110 +1,109 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import api from "../../services/api.js";
+import { useDispatch, useSelector } from "react-redux";
+
+import {
+  getContainerById,
+  clearContainerError,
+  clearCurrentContainer,
+} from "../../features/containers/containerSlice.js";
+
+import { createBooking } from "../../features/bookings/bookingSlice.js";
 
 const BookingForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const [container, setContainer] = useState(null);
-  const [formData, setFormData] = useState({
-    requestedWeight: "",
-    requestedVolume: "",
-  });
+  const {
+    currentContainer,
+    loading: containerLoading,
+    error: containerError,
+  } = useSelector((state) => state.containers);
 
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const { loading: bookingLoading, error: bookingError } = useSelector(
+    (state) => state.bookings,
+  );
+
+  const [requestedWeight, setRequestedWeight] = useState("");
+  const [requestedVolume, setRequestedVolume] = useState("");
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
-    const fetchContainer = async () => {
-      try {
-        const response = await api.get(`/containers/${id}`);
-        setContainer(response.data.container);
-      } catch (error) {
-        setError(error.response?.data?.message || "Failed to fetch container");
-      } finally {
-        setLoading(false);
-      }
+    dispatch(getContainerById(id));
+
+    return () => {
+      dispatch(clearContainerError());
+      dispatch(clearCurrentContainer());
     };
-
-    fetchContainer();
-  }, [id]);
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  }, [dispatch, id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
 
-    const requestedWeight = Number(formData.requestedWeight);
-    const requestedVolume = Number(formData.requestedVolume);
+    setFormError("");
 
-    if (requestedWeight <= 0) {
-      setError("Requested weight must be greater than 0");
+    if (!currentContainer) {
       return;
     }
 
-    if (requestedVolume < 0) {
-      setError("Requested volume cannot be negative");
+    const weight = Number(requestedWeight);
+    const volume = Number(requestedVolume);
+
+    if (!requestedWeight || weight <= 0) {
+      setFormError("Please enter a valid requested weight.");
       return;
     }
 
-    if (requestedWeight > container.availableWeightCapacity) {
-      setError("Requested weight exceeds available capacity");
+    if (requestedVolume === "" || volume < 0) {
+      setFormError("Please enter a valid requested volume.");
       return;
     }
 
-    if (requestedVolume > container.availableVolumeCapacity) {
-      setError("Requested volume exceeds available capacity");
+    if (weight > currentContainer.availableWeightCapacity) {
+      setFormError(
+        `Requested weight exceeds available capacity of ${currentContainer.availableWeightCapacity} kg.`,
+      );
       return;
     }
 
-    try {
-      setSubmitting(true);
+    if (volume > currentContainer.availableVolumeCapacity) {
+      setFormError(
+        `Requested volume exceeds available capacity of ${currentContainer.availableVolumeCapacity}.`,
+      );
+      return;
+    }
 
-      await api.post("/bookings", {
+    const result = await dispatch(
+      createBooking({
         containerId: id,
-        requestedWeight,
-        requestedVolume,
-      });
+        requestedWeight: weight,
+        requestedVolume: volume,
+      }),
+    );
 
-      setSuccess("Booking request submitted successfully");
-
-      setTimeout(() => {
-        navigate("/exporter/bookings");
-      }, 1000);
-    } catch (error) {
-      setError(error.response?.data?.message || "Failed to create booking");
-    } finally {
-      setSubmitting(false);
+    if (createBooking.fulfilled.match(result)) {
+      navigate("/exporter/bookings");
     }
   };
 
-  if (loading) {
+  if (containerLoading && !currentContainer) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-600">Loading container...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading container...</p>
       </div>
     );
   }
 
-  if (error && !container) {
+  if (containerError && !currentContainer) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100">
-        <div className="rounded-xl bg-white p-8 text-center shadow">
-          <p className="text-red-600">{error}</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{containerError}</p>
 
           <button
             onClick={() => navigate("/exporter/containers")}
-            className="mt-5 rounded-lg bg-teal-600 px-5 py-2 font-medium text-white"
+            className="px-4 py-2 bg-teal-600 text-white rounded-lg"
           >
             Back to Containers
           </button>
@@ -113,116 +112,128 @@ const BookingForm = () => {
     );
   }
 
+  if (!currentContainer) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
-      <nav className="bg-teal-700 px-6 py-4 text-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <h1
-            className="cursor-pointer text-2xl font-bold"
-            onClick={() => navigate("/exporter/dashboard")}
-          >
-            CargoShare
-          </h1>
+      <nav className="bg-teal-600 text-white px-6 py-4 flex justify-between items-center">
+        <h1 className="text-xl font-bold">CargoShare</h1>
 
-          <button
-            onClick={() => navigate(`/exporter/containers/${id}`)}
-            className="rounded-lg bg-white px-4 py-2 font-medium text-teal-700"
-          >
-            Back
-          </button>
-        </div>
+        <button
+          onClick={() => navigate("/exporter/containers")}
+          className="bg-white text-teal-600 px-4 py-2 rounded-lg font-medium"
+        >
+          Back
+        </button>
       </nav>
 
-      <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-        <div className="rounded-xl bg-white p-6 shadow sm:p-8">
-          <h2 className="text-2xl font-bold text-gray-800">
-            Book Container Space
-          </h2>
+      <main className="max-w-3xl mx-auto px-6 py-8">
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <h2 className="text-2xl font-bold mb-2">Book Container</h2>
 
-          <p className="mt-2 text-gray-600">Request space for your shipment.</p>
+          <p className="text-gray-600 mb-6">
+            Request cargo space in container{" "}
+            <span className="font-semibold">
+              {currentContainer.containerNumber}
+            </span>
+          </p>
 
-          <div className="mt-6 rounded-lg bg-gray-50 p-5">
-            <h3 className="font-semibold text-gray-800">
-              {container.containerNumber || "Container"}
-            </h3>
+          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold mb-3">Container Information</h3>
 
-            <p className="mt-2 text-sm text-gray-600">
-              {container.origin} → {container.destination}
-            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <p>
+                <span className="font-medium">Route:</span>{" "}
+                {currentContainer.origin} → {currentContainer.destination}
+              </p>
 
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Available Weight</p>
-                <p className="font-semibold text-teal-700">
-                  {container.availableWeightCapacity} kg
-                </p>
-              </div>
+              <p>
+                <span className="font-medium">Price:</span> ₹
+                {currentContainer.pricePerKg} / kg
+              </p>
 
-              <div>
-                <p className="text-sm text-gray-500">Available Volume</p>
-                <p className="font-semibold text-teal-700">
-                  {container.availableVolumeCapacity}
-                </p>
-              </div>
+              <p>
+                <span className="font-medium">Available Weight:</span>{" "}
+                {currentContainer.availableWeightCapacity} kg
+              </p>
+
+              <p>
+                <span className="font-medium">Available Volume:</span>{" "}
+                {currentContainer.availableVolumeCapacity}
+              </p>
+
+              <p>
+                <span className="font-medium">Status:</span>{" "}
+                {currentContainer.status}
+              </p>
             </div>
           </div>
 
-          {error && (
-            <div className="mt-6 rounded-lg bg-red-100 px-4 py-3 text-red-600">
-              {error}
+          {bookingError && (
+            <div className="bg-red-100 text-red-700 px-4 py-3 rounded-lg mb-4">
+              {bookingError}
             </div>
           )}
 
-          {success && (
-            <div className="mt-6 rounded-lg bg-green-100 px-4 py-3 text-green-700">
-              {success}
+          {formError && (
+            <div className="bg-red-100 text-red-700 px-4 py-3 rounded-lg mb-4">
+              {formError}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="mb-2 block font-medium text-gray-700">
+              <label className="block font-medium mb-2">
                 Requested Weight (kg)
               </label>
 
               <input
                 type="number"
-                name="requestedWeight"
-                value={formData.requestedWeight}
-                onChange={handleChange}
-                min="1"
+                min="0.01"
                 step="0.01"
-                required
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-teal-600"
+                value={requestedWeight}
+                onChange={(e) => setRequestedWeight(e.target.value)}
                 placeholder="Enter required weight"
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                disabled={bookingLoading}
               />
             </div>
 
             <div>
-              <label className="mb-2 block font-medium text-gray-700">
-                Requested Volume
-              </label>
+              <label className="block font-medium mb-2">Requested Volume</label>
 
               <input
                 type="number"
-                name="requestedVolume"
-                value={formData.requestedVolume}
-                onChange={handleChange}
                 min="0"
                 step="0.01"
-                required
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-teal-600"
+                value={requestedVolume}
+                onChange={(e) => setRequestedVolume(e.target.value)}
                 placeholder="Enter required volume"
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                disabled={bookingLoading}
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting || container.status !== "available"}
-              className="w-full rounded-lg bg-teal-600 px-6 py-3 font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-            >
-              {submitting ? "Submitting..." : "Submit Booking Request"}
-            </button>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => navigate(`/exporter/containers/${id}`)}
+                className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50"
+                disabled={bookingLoading}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={bookingLoading}
+                className="flex-1 bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {bookingLoading ? "Submitting..." : "Submit Booking"}
+              </button>
+            </div>
           </form>
         </div>
       </main>

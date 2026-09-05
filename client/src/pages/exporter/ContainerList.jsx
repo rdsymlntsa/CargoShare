@@ -1,33 +1,29 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../services/api.js"
+import { useDispatch, useSelector } from "react-redux";
+
+import {
+  getContainers,
+  clearContainerError,
+} from "../../features/containers/containerSlice.js";
 
 const ContainerList = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const [containers, setContainers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { containers, loading, error } = useSelector(
+    (state) => state.containers,
+  );
 
   useEffect(() => {
-    const fetchContainers = async () => {
-      try {
-        const response = await api.get("/containers");
+    dispatch(getContainers());
 
-        setContainers(response.data.containers);
-      } catch (error) {
-        setError(
-          error.response?.data?.message || "Failed to fetch containers"
-        );
-      } finally {
-        setLoading(false);
-      }
+    return () => {
+      dispatch(clearContainerError());
     };
+  }, [dispatch]);
 
-    fetchContainers();
-  }, []);
-
-  if (loading) {
+  if (loading && containers.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-gray-600">Loading containers...</p>
@@ -48,29 +44,29 @@ const ContainerList = () => {
 
           <button
             onClick={() => navigate("/exporter/dashboard")}
-            className="rounded-lg bg-white px-4 py-2 font-medium text-teal-700"
+            className="rounded-lg bg-white px-4 py-2 font-medium text-teal-700 hover:bg-gray-100"
           >
             Dashboard
           </button>
         </div>
       </nav>
 
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <h2 className="text-3xl font-bold text-gray-800">
           Available Containers
         </h2>
 
         <p className="mt-2 text-gray-600">
-          Find containers with available space for your shipment.
+          Browse containers available for booking.
         </p>
 
         {error && (
-          <p className="mt-6 rounded-lg bg-red-100 px-4 py-3 text-red-600">
+          <div className="mt-6 rounded-lg bg-red-100 px-4 py-3 text-red-600">
             {error}
-          </p>
+          </div>
         )}
 
-        {containers.length === 0 && !error && (
+        {!error && containers.length === 0 && (
           <div className="mt-8 rounded-xl bg-white p-8 text-center shadow">
             <p className="text-gray-500">
               No containers are currently available.
@@ -78,60 +74,62 @@ const ContainerList = () => {
           </div>
         )}
 
-        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {containers.map((container) => (
-            <div
-              key={container._id}
-              className="rounded-xl bg-white p-6 shadow"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-800">
-                  {container.containerNumber || "Container"}
-                </h3>
+            <div key={container._id} className="rounded-xl bg-white p-6 shadow">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Container</p>
 
-                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                  <h3 className="mt-1 text-xl font-bold text-gray-800">
+                    {container.containerNumber}
+                  </h3>
+                </div>
+
+                <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-medium capitalize text-green-700">
                   {container.status}
                 </span>
               </div>
 
-              <div className="mt-5 space-y-2 text-sm text-gray-600">
-                <p>
-                  <span className="font-medium text-gray-800">From:</span>{" "}
-                  {container.origin}
-                </p>
+              <div className="mt-5 space-y-3">
+                <div>
+                  <p className="text-sm text-gray-500">Route</p>
 
-                <p>
-                  <span className="font-medium text-gray-800">To:</span>{" "}
-                  {container.destination}
-                </p>
+                  <p className="font-medium text-gray-800">
+                    {container.origin} → {container.destination}
+                  </p>
+                </div>
 
-                <p>
-                  <span className="font-medium text-gray-800">
-                    Available Weight:
-                  </span>{" "}
-                  {container.availableWeightCapacity} kg
-                </p>
+                <div>
+                  <p className="text-sm text-gray-500">Available Weight</p>
 
-                <p>
-                  <span className="font-medium text-gray-800">
-                    Available Volume:
-                  </span>{" "}
-                  {container.availableVolumeCapacity}
-                </p>
+                  <p className="font-medium text-gray-800">
+                    {container.availableWeightCapacity} kg
+                  </p>
+                </div>
 
-                <p>
-                  <span className="font-medium text-gray-800">
-                    Price:
-                  </span>{" "}
-                  ₹{container.pricePerKg} / kg
-                </p>
+                <div>
+                  <p className="text-sm text-gray-500">Available Volume</p>
+
+                  <p className="font-medium text-gray-800">
+                    {container.availableVolumeCapacity} m³
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500">Price</p>
+
+                  <p className="font-medium text-gray-800">
+                    ₹{container.pricePerKg} / kg
+                  </p>
+                </div>
               </div>
 
               <button
                 onClick={() =>
                   navigate(`/exporter/containers/${container._id}`)
                 }
-                className="mt-6 w-full rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
+                className="mt-6 w-full rounded-lg bg-teal-600 px-5 py-2 font-medium text-white hover:bg-teal-700"
               >
                 View Details
               </button>

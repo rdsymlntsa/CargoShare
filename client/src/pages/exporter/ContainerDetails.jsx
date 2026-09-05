@@ -1,32 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import api from "../../services/api.js";
+import { useDispatch, useSelector } from "react-redux";
+
+import {
+  getContainerById,
+  clearContainerError,
+  clearCurrentContainer,
+} from "../../features/containers/containerSlice.js";
 
 const ContainerDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const [container, setContainer] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { currentContainer, loading, error } = useSelector(
+    (state) => state.containers,
+  );
 
   useEffect(() => {
-    const fetchContainer = async () => {
-      try {
-        const response = await api.get(`/containers/${id}`);
+    dispatch(getContainerById(id));
 
-        setContainer(response.data.container);
-      } catch (error) {
-        setError(error.response?.data?.message || "Failed to fetch container");
-      } finally {
-        setLoading(false);
-      }
+    return () => {
+      dispatch(clearContainerError());
+      dispatch(clearCurrentContainer());
     };
+  }, [dispatch, id]);
 
-    fetchContainer();
-  }, [id]);
-
-  if (loading) {
+  if (loading && !currentContainer) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-gray-600">Loading container...</p>
@@ -34,26 +34,42 @@ const ContainerDetails = () => {
     );
   }
 
-  if (error || !container) {
+  if (error && !currentContainer) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100">
-        <div className="rounded-xl bg-white p-8 text-center shadow">
-          <p className="text-red-600">{error || "Container not found"}</p>
+      <div className="min-h-screen bg-gray-100">
+        <nav className="bg-teal-700 px-6 py-4 text-white">
+          <div className="mx-auto flex max-w-7xl items-center justify-between">
+            <h1
+              className="cursor-pointer text-2xl font-bold"
+              onClick={() => navigate("/exporter/dashboard")}
+            >
+              CargoShare
+            </h1>
 
-          <button
-            onClick={() => navigate("/exporter/containers")}
-            className="mt-5 rounded-lg bg-teal-600 px-5 py-2 font-medium text-white hover:bg-teal-700"
-          >
-            Back to Containers
-          </button>
-        </div>
+            <button
+              onClick={() => navigate("/exporter/containers")}
+              className="rounded-lg bg-white px-4 py-2 font-medium text-teal-700 hover:bg-gray-100"
+            >
+              Back
+            </button>
+          </div>
+        </nav>
+
+        <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+          <div className="rounded-xl bg-red-100 p-6 text-red-600">{error}</div>
+        </main>
       </div>
     );
   }
 
+  if (!currentContainer) {
+    return null;
+  }
+
+  const container = currentContainer;
+
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Navbar */}
       <nav className="bg-teal-700 px-6 py-4 text-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <h1
@@ -67,116 +83,107 @@ const ContainerDetails = () => {
             onClick={() => navigate("/exporter/containers")}
             className="rounded-lg bg-white px-4 py-2 font-medium text-teal-700 hover:bg-gray-100"
           >
-            Back to Containers
+            Back
           </button>
         </div>
       </nav>
 
-      {/* Content */}
-      <main className="mx-auto max-w-5xl px-6 py-8">
-        <div className="rounded-xl bg-white p-8 shadow">
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+        <div className="rounded-xl bg-white p-6 shadow">
           {/* Header */}
-          <div className="flex flex-col justify-between gap-4 border-b pb-6 md:flex-row md:items-center">
+          <div className="flex flex-col justify-between gap-4 border-b pb-6 sm:flex-row sm:items-center">
             <div>
               <p className="text-sm text-gray-500">Container</p>
 
               <h2 className="mt-1 text-3xl font-bold text-gray-800">
-                {container.containerNumber || "Container"}
+                {container.containerNumber}
               </h2>
             </div>
 
-            <span className="w-fit rounded-full bg-green-100 px-4 py-2 text-sm font-medium capitalize text-green-700">
+            <span
+              className={`w-fit rounded-full px-4 py-2 text-sm font-medium capitalize ${
+                container.status === "available"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
               {container.status}
             </span>
           </div>
 
           {/* Route */}
-          <div className="mt-8">
-            <h3 className="text-xl font-semibold text-gray-800">
-              Shipment Route
-            </h3>
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-gray-800">Route</h3>
 
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <div className="rounded-lg bg-gray-50 p-5">
-                <p className="text-sm text-gray-500">Origin</p>
-                <p className="mt-1 text-lg font-semibold text-gray-800">
-                  {container.origin}
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-gray-50 p-5">
-                <p className="text-sm text-gray-500">Destination</p>
-                <p className="mt-1 text-lg font-semibold text-gray-800">
-                  {container.destination}
-                </p>
-              </div>
+            <div className="mt-3 rounded-lg bg-gray-50 p-4">
+              <p className="text-lg font-medium text-gray-800">
+                {container.origin} → {container.destination}
+              </p>
             </div>
           </div>
 
-          {/* Dates */}
-          <div className="mt-8">
-            <h3 className="text-xl font-semibold text-gray-800">Schedule</h3>
+          {/* Schedule */}
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-gray-800">Schedule</h3>
 
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <div className="rounded-lg bg-gray-50 p-5">
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-lg bg-gray-50 p-4">
                 <p className="text-sm text-gray-500">Departure</p>
-                <p className="mt-1 font-semibold text-gray-800">
-                  {new Date(container.departureDate).toLocaleString()}
+
+                <p className="mt-1 font-medium text-gray-800">
+                  {new Date(container.departureDate).toLocaleDateString()}
                 </p>
               </div>
 
-              <div className="rounded-lg bg-gray-50 p-5">
+              <div className="rounded-lg bg-gray-50 p-4">
                 <p className="text-sm text-gray-500">Arrival</p>
-                <p className="mt-1 font-semibold text-gray-800">
-                  {container.arrivalDate
-                    ? new Date(container.arrivalDate).toLocaleString()
-                    : "Not specified"}
+
+                <p className="mt-1 font-medium text-gray-800">
+                  {new Date(container.arrivalDate).toLocaleDateString()}
                 </p>
               </div>
             </div>
           </div>
 
           {/* Capacity */}
-          <div className="mt-8">
-            <h3 className="text-xl font-semibold text-gray-800">
-              Available Capacity
-            </h3>
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-gray-800">Capacity</h3>
 
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <div className="rounded-lg bg-gray-50 p-5">
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-lg bg-gray-50 p-4">
                 <p className="text-sm text-gray-500">Available Weight</p>
 
-                <p className="mt-1 text-2xl font-bold text-teal-700">
+                <p className="mt-1 text-xl font-semibold text-gray-800">
                   {container.availableWeightCapacity} kg
                 </p>
 
                 <p className="mt-1 text-sm text-gray-500">
-                  Total: {container.totalWeightCapacity} kg
+                  of {container.totalWeightCapacity} kg
                 </p>
               </div>
 
-              <div className="rounded-lg bg-gray-50 p-5">
+              <div className="rounded-lg bg-gray-50 p-4">
                 <p className="text-sm text-gray-500">Available Volume</p>
 
-                <p className="mt-1 text-2xl font-bold text-teal-700">
-                  {container.availableVolumeCapacity}
+                <p className="mt-1 text-xl font-semibold text-gray-800">
+                  {container.availableVolumeCapacity} m³
                 </p>
 
                 <p className="mt-1 text-sm text-gray-500">
-                  Total: {container.totalVolumeCapacity}
+                  of {container.totalVolumeCapacity} m³
                 </p>
               </div>
             </div>
           </div>
 
           {/* Pricing */}
-          <div className="mt-8">
-            <h3 className="text-xl font-semibold text-gray-800">Pricing</h3>
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-gray-800">Pricing</h3>
 
-            <div className="mt-4 rounded-lg bg-gray-50 p-5">
+            <div className="mt-3 rounded-lg bg-gray-50 p-4">
               <p className="text-sm text-gray-500">Price per kg</p>
 
-              <p className="mt-1 text-3xl font-bold text-teal-700">
+              <p className="mt-1 text-xl font-semibold text-gray-800">
                 ₹{container.pricePerKg}
               </p>
             </div>
@@ -184,11 +191,11 @@ const ContainerDetails = () => {
 
           {/* Provider */}
           {container.provider && (
-            <div className="mt-8">
-              <h3 className="text-xl font-semibold text-gray-800">Provider</h3>
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold text-gray-800">Provider</h3>
 
-              <div className="mt-4 rounded-lg bg-gray-50 p-5">
-                <p className="font-semibold text-gray-800">
+              <div className="mt-3 rounded-lg bg-gray-50 p-4">
+                <p className="font-medium text-gray-800">
                   {container.provider.name}
                 </p>
 
@@ -196,24 +203,26 @@ const ContainerDetails = () => {
                   {container.provider.email}
                 </p>
 
-                <p className="mt-1 text-sm text-gray-600">
-                  {container.provider.phone}
-                </p>
+                {container.provider.phone && (
+                  <p className="mt-1 text-sm text-gray-600">
+                    {container.provider.phone}
+                  </p>
+                )}
               </div>
             </div>
           )}
 
-          {/* Book button */}
-          <div className="mt-10 border-t pt-6">
+          {/* Book */}
+          <div className="mt-8 border-t pt-6">
             <button
               onClick={() =>
                 navigate(`/exporter/containers/${container._id}/book`)
               }
               disabled={container.status !== "available"}
-              className="w-full rounded-lg bg-teal-600 px-6 py-3 text-lg font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+              className="w-full rounded-lg bg-teal-600 px-6 py-3 font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-gray-400"
             >
               {container.status === "available"
-                ? "Book Space"
+                ? "Book Container"
                 : "Container Not Available"}
             </button>
           </div>
