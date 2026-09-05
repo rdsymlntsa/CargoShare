@@ -6,10 +6,17 @@ import authMiddleware from "./middleware/authMiddleware.js";
 import containerRoutes from "./routes/containerRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import cors from "cors";
 
 dotenv.config();
 
 const app = express();
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  }),
+);
 
 app.use(express.json());
 connectDB();

@@ -1,16 +1,14 @@
 import { useSelector } from 'react-redux'
+import Login from "./pages/auth/Login"
 function App() {
      const auth = useSelector((state) => state.auth);
 
   console.log(auth);
 
   return (
-    <div className="flex bg-black  min-h-screen items-center justify-center" 
-     >
-      <h1 className="text-6xl text-teal-500 font-bold">
-        CargoShare
-      </h1>
-    </div>
+    <Login>
+
+    </Login>
   );
 }
 
