@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import { getCurrentUser } from "./features/auth/authSlice.js";
+import ContainerList from "./pages/auth/exporter/ContainerList.jsx";
 
 import Login from "./pages/auth/Login.jsx";
 import Register from "./pages/auth/Register.jsx";
@@ -34,6 +35,15 @@ const App = () => {
           element={
             <RoleProtectedRoute allowedRoles={["exporter"]}>
               <ExporterDashboard />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/exporter/containers"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter"]}>
+              <ContainerList />
             </RoleProtectedRoute>
           }
         />
