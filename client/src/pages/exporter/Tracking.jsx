@@ -1,98 +1,31 @@
 import { useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-
-delete L.Icon.Default.prototype._getIconUrl;
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
-
 import {
-  getContainerLocation,
-  clearContainerError,
-  clearCurrentContainer,
-} from "../../features/containers/containerSlice.js";
+  getMyBookings,
+  clearBookingError,
+} from "../../features/bookings/bookingSlice.js";
 
 const Tracking = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
   const dispatch = useDispatch();
 
-  const { currentContainer, loading, error } = useSelector(
-    (state) => state.containers,
-  );
-
-  const MapUpdater = ({ latitude, longitude }) => {
-    const map = useMap();
-
-    useEffect(() => {
-      map.setView([latitude, longitude], map.getZoom());
-    }, [map, latitude, longitude]);
-
-    return null;
-  };
+  const { bookings, loading, error } = useSelector((state) => state.bookings);
 
   useEffect(() => {
-    dispatch(getContainerLocation(id));
-  }, [dispatch, id]);
-
-  useEffect(() => {
-    if (!currentContainer || currentContainer.status !== "in-transit") {
-      return;
-    }
-
-    const intervalId = setInterval(() => {
-      dispatch(getContainerLocation(id));
-    }, 15000);
+    dispatch(getMyBookings());
 
     return () => {
-      clearInterval(intervalId);
-    };
-  }, [dispatch, id, currentContainer?.status]);
-
-  useEffect(() => {
-    return () => {
-      dispatch(clearCurrentContainer());
-      dispatch(clearContainerError());
+      dispatch(clearBookingError());
     };
   }, [dispatch]);
 
-  if (error && !currentContainer) {
-    return (
-      <div className="min-h-screen bg-gray-100">
-        <nav className="bg-teal-600 text-white px-6 py-4">
-          <h1 className="text-xl font-bold">CargoShare</h1>
-        </nav>
-
-        <main className="max-w-2xl mx-auto px-6 py-8">
-          <div className="bg-red-100 text-red-700 px-4 py-3 rounded-lg">
-            {error}
-          </div>
-
-          <button
-            onClick={() => navigate("/exporter/bookings")}
-            className="mt-5 bg-teal-600 text-white px-5 py-3 rounded-lg font-medium"
-          >
-            Back to My Bookings
-          </button>
-        </main>
-      </div>
-    );
-  }
-
-  if (!currentContainer) {
-    return null;
-  }
-
-  const location = currentContainer.currentLocation;
+  const activeShipments = bookings.filter(
+    (booking) =>
+      booking.status === "approved" &&
+      booking.container?.status === "in-transit",
+  );
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -107,91 +40,116 @@ const Tracking = () => {
         </button>
       </nav>
 
-      <main className="max-w-3xl mx-auto px-6 py-8">
-        <button
-          onClick={() => navigate("/exporter/bookings")}
-          className="text-teal-600 font-medium mb-5"
-        >
-          ← Back to My Bookings
-        </button>
+      <main className="max-w-5xl mx-auto px-6 py-8">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">Track Shipments</h2>
 
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                Track Shipment
-              </h2>
-
-              <p className="text-gray-600 mt-1">
-                {currentContainer.containerNumber}
-              </p>
-            </div>
-
-            <span className="self-start sm:self-auto bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium capitalize">
-              {currentContainer.status}
-            </span>
-          </div>
-
-          <div className="mt-6 bg-gray-50 rounded-lg p-5">
-            <p className="text-sm text-gray-500">Route</p>
-
-            <p className="font-medium text-gray-800 mt-1">
-              {currentContainer.origin} → {currentContainer.destination}
-            </p>
-          </div>
-
-          {location ? (
-            <div className="mt-5">
-              <h3 className="font-semibold text-gray-800 mb-3">
-                Current Location
-              </h3>
-
-              <div className="rounded-lg overflow-hidden border border-gray-200">
-                <MapContainer
-                  center={[location.latitude, location.longitude]}
-                  zoom={13}
-                  scrollWheelZoom={true}
-                  className="h-96 w-full"
-                >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-
-                  <MapUpdater
-                    latitude={location.latitude}
-                    longitude={location.longitude}
-                  />
-
-                  <Marker position={[location.latitude, location.longitude]}>
-                    <Popup>
-                      <strong>{currentContainer.containerNumber}</strong>
-                      <br />
-                      Current container location
-                    </Popup>
-                  </Marker>
-                </MapContainer>
-              </div>
-
-              <div className="mt-3 text-sm text-gray-500">
-                <p>Latitude: {location.latitude}</p>
-
-                <p>Longitude: {location.longitude}</p>
-
-                {location.updatedAt && (
-                  <p className="mt-1">
-                    Last updated:{" "}
-                    {new Date(location.updatedAt).toLocaleString()}
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="mt-5 bg-yellow-100 text-yellow-700 px-4 py-3 rounded-lg">
-              No GPS location has been recorded yet.
-            </div>
-          )}
+          <p className="text-gray-600 mt-1">
+            View and track your shipments that are currently in transit.
+          </p>
         </div>
+
+        {loading && (
+          <div className="bg-white rounded-xl shadow-md p-6 text-center">
+            <p className="text-gray-600">Loading shipments...</p>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="bg-red-100 text-red-700 rounded-lg px-4 py-3">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && activeShipments.length === 0 && (
+          <div className="bg-white rounded-xl shadow-md p-8 text-center">
+            <h3 className="text-lg font-semibold text-gray-800">
+              No active shipments
+            </h3>
+
+            <p className="text-gray-600 mt-2">
+              You currently have no approved shipments that are in transit.
+            </p>
+
+            <button
+              onClick={() => navigate("/exporter/bookings")}
+              className="mt-5 bg-teal-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-teal-700"
+            >
+              View My Bookings
+            </button>
+          </div>
+        )}
+
+        {!loading && activeShipments.length > 0 && (
+          <div className="space-y-5">
+            {activeShipments.map((booking) => {
+              const container = booking.container;
+
+              return (
+                <div
+                  key={booking._id}
+                  className="bg-white rounded-xl shadow-md p-6"
+                >
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800">
+                        Container {container?.containerNumber || "N/A"}
+                      </h3>
+
+                      <p className="text-gray-600 mt-1">
+                        {container?.origin || "N/A"} →{" "}
+                        {container?.destination || "N/A"}
+                      </p>
+                    </div>
+
+                    <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium w-fit">
+                      In Transit
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+                    <div>
+                      <p className="text-sm text-gray-500">Booked Weight</p>
+
+                      <p className="font-semibold text-gray-800">
+                        {booking.requestedWeight} kg
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-gray-500">Booked Volume</p>
+
+                      <p className="font-semibold text-gray-800">
+                        {booking.requestedVolume}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-gray-500">Departure</p>
+
+                      <p className="font-semibold text-gray-800">
+                        {container?.departureDate
+                          ? new Date(
+                              container.departureDate,
+                            ).toLocaleDateString()
+                          : "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() =>
+                      navigate(`/exporter/containers/${container._id}/tracking`)
+                    }
+                    className="w-full mt-6 bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700"
+                  >
+                    Track Shipment
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </main>
     </div>
   );
