@@ -316,3 +316,31 @@ export const cancelBooking = async (req, res) => {
     });
   }
 };
+
+export const getProviderBookingHistory = async (req, res) => {
+  try {
+    const containers = await Container.find({
+      provider: req.user._id,
+    }).select("_id");
+
+    const containerIds = containers.map((container) => container._id);
+
+    const bookings = await Booking.find({
+      container: { $in: containerIds },
+      status: { $in: ["approved", "rejected", "cancelled"] },
+    })
+      .populate("exporter", "name email phone")
+      .populate("container")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      message: "Booking history fetched successfully",
+      bookings,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};

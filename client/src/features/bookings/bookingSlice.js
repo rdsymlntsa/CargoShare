@@ -65,6 +65,22 @@ export const getProviderBookings = createAsyncThunk(
   },
 );
 
+// Get provider booking history
+export const getProviderBookingHistory = createAsyncThunk(
+  "bookings/getProviderBookingHistory",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/bookings/provider/history");
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch booking history",
+      );
+    }
+  },
+);
+
 // Approve booking
 export const approveBooking = createAsyncThunk(
   "bookings/approveBooking",
@@ -202,6 +218,22 @@ const bookingSlice = createSlice({
       })
 
       .addCase(getProviderBookings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Get provider booking history
+      .addCase(getProviderBookingHistory.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+
+      .addCase(getProviderBookingHistory.fulfilled, (state, action) => {
+        state.loading = false;
+        state.bookings = action.payload.bookings;
+        state.error = null;
+      })
+
+      .addCase(getProviderBookingHistory.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

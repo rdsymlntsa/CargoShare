@@ -101,12 +101,21 @@ const ProviderDashboard = () => {
               Review booking requests from exporters and approve or reject them.
             </p>
 
-            <button
-              onClick={() => navigate("/provider/bookings")}
-              className="bg-teal-600 text-white px-5 py-2 rounded hover:bg-teal-700"
-            >
-              View Requests
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate("/provider/bookings")}
+                className="bg-teal-600 text-white px-5 py-2 rounded hover:bg-teal-700"
+              >
+                View Requests
+              </button>
+
+              <button
+                onClick={() => navigate("/provider/bookings/history")}
+                className="bg-gray-600 text-white px-5 py-2 rounded hover:bg-gray-700"
+              >
+                Booking History
+              </button>
+            </div>
           </div>
 
           {/* Track Shipments */}

@@ -21,6 +21,7 @@ import UpdateContainerLocation from "./pages/provider/UpdateContainerLocation.js
 import ShipmentTracking from "./pages/exporter/ShipmentTracking.jsx";
 import Tracking from "./pages/exporter/Tracking.jsx";
 import ProviderTracking from "./pages/provider/Tracking.jsx";
+import BookingHistory from "./pages/provider/BookingHistory.jsx";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -115,6 +116,15 @@ const App = () => {
           element={
             <RoleProtectedRoute allowedRoles={["provider"]}>
               <BookingRequests />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/provider/bookings/history"
+          element={
+            <RoleProtectedRoute allowedRoles={["provider"]}>
+              <BookingHistory />
             </RoleProtectedRoute>
           }
         />
