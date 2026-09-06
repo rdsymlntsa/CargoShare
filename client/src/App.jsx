@@ -20,6 +20,7 @@ import ProviderContainerDetails from "./pages/provider/ProviderContainerDetails.
 import UpdateContainerLocation from "./pages/provider/UpdateContainerLocation.jsx";
 import ShipmentTracking from "./pages/exporter/ShipmentTracking.jsx";
 import Tracking from "./pages/exporter/Tracking.jsx";
+import ProviderTracking from "./pages/provider/Tracking.jsx";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -114,6 +115,15 @@ const App = () => {
           element={
             <RoleProtectedRoute allowedRoles={["provider"]}>
               <BookingRequests />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/provider/tracking"
+          element={
+            <RoleProtectedRoute allowedRoles={["provider"]}>
+              <ProviderTracking />
             </RoleProtectedRoute>
           }
         />
