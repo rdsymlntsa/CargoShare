@@ -1,5 +1,4 @@
 import Container from "../models/Container.js";
-import Booking from "../models/Booking.js";
 
 export const createContainer = async (req, res) => {
   try {
@@ -333,33 +332,11 @@ export const updateContainerLocation = async (req, res) => {
       });
     }
 
-    const now = new Date();
-
-    // Update current location every time
     container.currentLocation = {
       latitude: lat,
       longitude: lng,
-      updatedAt: now,
+      updatedAt: new Date(),
     };
-
-    // Save to tracking history only every 5 minutes
-    const lastHistoryPoint =
-      container.trackingHistory.length > 0
-        ? container.trackingHistory[container.trackingHistory.length - 1]
-        : null;
-
-    const shouldSaveHistory =
-      !lastHistoryPoint ||
-      now.getTime() - new Date(lastHistoryPoint.timestamp).getTime() >=
-        5 * 60 * 1000;
-
-    if (shouldSaveHistory) {
-      container.trackingHistory.push({
-        latitude: lat,
-        longitude: lng,
-        timestamp: now,
-      });
-    }
 
     await container.save();
 
@@ -369,91 +346,6 @@ export const updateContainerLocation = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({
-      message: "Server error",
-      error: error.message,
-    });
-  }
-};
-
-export const getContainerTracking = async (req, res) => {
-  try {
-    const container = await Container.findById(req.params.id);
-
-    if (!container) {
-      return res.status(404).json({
-        message: "Container not found",
-      });
-    }
-
-    const userId = req.user._id.toString();
-
-    // Provider who owns the container
-    if (
-      req.user.role === "provider" &&
-      container.provider.toString() === userId
-    ) {
-      return res.status(200).json({
-        message: "Container tracking fetched successfully",
-        container: {
-          _id: container._id,
-          containerNumber: container.containerNumber,
-          origin: container.origin,
-          destination: container.destination,
-          status: container.status,
-          currentLocation: container.currentLocation,
-          trackingHistory: container.trackingHistory,
-        },
-      });
-    }
-
-    // Exporter who has a booking for the container
-    if (req.user.role === "exporter") {
-      const booking = await Booking.findOne({
-        container: container._id,
-        exporter: req.user._id,
-      });
-
-      if (!booking) {
-        return res.status(403).json({
-          message: "You are not authorized to view this container tracking",
-        });
-      }
-
-      return res.status(200).json({
-        message: "Container tracking fetched successfully",
-        container: {
-          _id: container._id,
-          containerNumber: container.containerNumber,
-          origin: container.origin,
-          destination: container.destination,
-          status: container.status,
-          currentLocation: container.currentLocation,
-          trackingHistory: container.trackingHistory,
-        },
-      });
-    }
-
-    // Admin
-    if (req.user.role === "admin") {
-      return res.status(200).json({
-        message: "Container tracking fetched successfully",
-        container: {
-          _id: container._id,
-          containerNumber: container.containerNumber,
-          origin: container.origin,
-          destination: container.destination,
-          status: container.status,
-          currentLocation: container.currentLocation,
-          trackingHistory: container.trackingHistory,
-        },
-      });
-    }
-
-    return res.status(403).json({
-      message: "You are not authorized to view this container tracking",
-    });
-  } catch (error) {
-    res.status(500).json({
       message: "Server error",
       error: error.message,
     });

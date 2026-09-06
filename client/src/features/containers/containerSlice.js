@@ -134,26 +134,9 @@ export const updateContainerLocation = createAsyncThunk(
   },
 );
 
-// Get container tracking
-export const getContainerTracking = createAsyncThunk(
-  "containers/getContainerTracking",
-  async (id, { rejectWithValue }) => {
-    try {
-      const response = await api.get(`/containers/${id}/tracking`);
-
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch container tracking",
-      );
-    }
-  },
-);
-
 const initialState = {
   containers: [],
   currentContainer: null,
-  tracking: [],
   loading: false,
   error: null,
 };
@@ -313,23 +296,6 @@ const containerSlice = createSlice({
       })
 
       .addCase(updateContainerLocation.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // Get tracking
-      .addCase(getContainerTracking.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-
-      .addCase(getContainerTracking.fulfilled, (state, action) => {
-        state.loading = false;
-        state.tracking = action.payload.trackingHistory;
-        state.error = null;
-      })
-
-      .addCase(getContainerTracking.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
