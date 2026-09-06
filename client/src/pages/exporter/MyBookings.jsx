@@ -53,6 +53,7 @@ const MyBookings = () => {
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-800">My Bookings</h2>
+
           <p className="text-gray-600 mt-1">
             View and manage your container booking requests.
           </p>
@@ -120,6 +121,7 @@ const MyBookings = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                   <div>
                     <p className="text-sm text-gray-500">Requested Weight</p>
+
                     <p className="font-semibold text-gray-800">
                       {booking.requestedWeight} kg
                     </p>
@@ -127,6 +129,7 @@ const MyBookings = () => {
 
                   <div>
                     <p className="text-sm text-gray-500">Requested Volume</p>
+
                     <p className="font-semibold text-gray-800">
                       {booking.requestedVolume}
                     </p>
@@ -134,6 +137,7 @@ const MyBookings = () => {
 
                   <div>
                     <p className="text-sm text-gray-500">Departure</p>
+
                     <p className="font-semibold text-gray-800">
                       {booking.container?.departureDate
                         ? new Date(
@@ -145,6 +149,7 @@ const MyBookings = () => {
 
                   <div>
                     <p className="text-sm text-gray-500">Booking Date</p>
+
                     <p className="font-semibold text-gray-800">
                       {booking.createdAt
                         ? new Date(booking.createdAt).toLocaleDateString()
@@ -153,7 +158,7 @@ const MyBookings = () => {
                   </div>
                 </div>
 
-                <div className="mt-6">
+                <div className="mt-6 flex flex-wrap gap-3">
                   {booking.container?._id && (
                     <button
                       onClick={() =>
@@ -166,6 +171,21 @@ const MyBookings = () => {
                       View Container
                     </button>
                   )}
+
+                  {booking.status === "approved" &&
+                    booking.container?.status === "in-transit" &&
+                    booking.container?._id && (
+                      <button
+                        onClick={() =>
+                          navigate(
+                            `/exporter/containers/${booking.container._id}/tracking`,
+                          )
+                        }
+                        className="bg-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-teal-700"
+                      >
+                        Track Shipment
+                      </button>
+                    )}
                 </div>
               </div>
             ))}
