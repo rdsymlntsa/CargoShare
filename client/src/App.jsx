@@ -18,6 +18,7 @@ import CreateContainer from "./pages/provider/CreateContainer.jsx";
 import MyContainers from "./pages/provider/MyContainers.jsx";
 import ProviderContainerDetails from "./pages/provider/ProviderContainerDetails.jsx";
 import UpdateContainerLocation from "./pages/provider/UpdateContainerLocation.jsx";
+import Tracking from "./pages/exporter/Tracking.jsx";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -75,6 +76,15 @@ const App = () => {
           element={
             <RoleProtectedRoute allowedRoles={["exporter"]}>
               <MyBookings />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/exporter/containers/:id/tracking"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter"]}>
+              <Tracking />
             </RoleProtectedRoute>
           }
         />

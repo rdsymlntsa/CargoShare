@@ -24,18 +24,48 @@ const UpdateContainerLocation = () => {
   const watchIdRef = useRef(null);
   const lastUpdateRef = useRef(0);
 
+  // Fetch container when page opens
   useEffect(() => {
     dispatch(getMyContainerById(id));
 
     return () => {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
       }
 
       dispatch(clearCurrentContainer());
       dispatch(clearContainerError());
     };
   }, [dispatch, id]);
+
+  // Poll container status while tracking
+  useEffect(() => {
+    if (!tracking) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      dispatch(getMyContainerById(id));
+    }, 15000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [dispatch, id, tracking]);
+
+  // Automatically stop GPS if container is no longer in transit
+  useEffect(() => {
+    if (
+      currentContainer &&
+      currentContainer.status !== "in-transit" &&
+      watchIdRef.current !== null
+    ) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+      setTracking(false);
+    }
+  }, [currentContainer?.status]);
 
   const sendLocationUpdate = (position) => {
     const now = Date.now();
@@ -109,6 +139,7 @@ const UpdateContainerLocation = () => {
     setTracking(false);
   };
 
+  // Early returns come AFTER all hooks
   if (loading && !currentContainer) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">

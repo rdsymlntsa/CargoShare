@@ -134,6 +134,22 @@ export const updateContainerLocation = createAsyncThunk(
   },
 );
 
+// Get container current location
+export const getContainerLocation = createAsyncThunk(
+  "containers/getContainerLocation",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/containers/${id}/location`);
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch container location",
+      );
+    }
+  },
+);
+
 const initialState = {
   containers: [],
   currentContainer: null,
@@ -296,6 +312,22 @@ const containerSlice = createSlice({
       })
 
       .addCase(updateContainerLocation.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Get container current location
+      .addCase(getContainerLocation.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+
+      .addCase(getContainerLocation.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentContainer = action.payload.container;
+        state.error = null;
+      })
+
+      .addCase(getContainerLocation.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

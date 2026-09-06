@@ -8,6 +8,7 @@ import {
   departContainer,
   deliverContainer,
   updateContainerLocation,
+  getContainerLocation
 } from "../controllers/containerController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
@@ -46,6 +47,11 @@ router.patch(
   authMiddleware,
   roleMiddleware(["provider"]),
   updateContainerLocation,
+);
+router.get(
+  "/:id/location",
+  authMiddleware,
+  getContainerLocation,
 );
 router.get("/:id", authMiddleware, getContainerById);
 

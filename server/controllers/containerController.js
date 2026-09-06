@@ -1,4 +1,5 @@
 import Container from "../models/Container.js";
+import Booking from "../models/Booking.js";
 
 export const createContainer = async (req, res) => {
   try {
@@ -342,6 +343,55 @@ export const updateContainerLocation = async (req, res) => {
 
     return res.status(200).json({
       message: "Container location updated successfully",
+      container,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const getContainerLocation = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const container = await Container.findById(id).select(
+      "provider containerNumber origin destination status currentLocation",
+    );
+
+    if (!container) {
+      return res.status(404).json({
+        message: "Container not found",
+      });
+    }
+
+    const isProvider =
+      container.provider.toString() === req.user._id.toString();
+
+    if (!isProvider) {
+      const booking = await Booking.findOne({
+        container: id,
+        exporter: req.user._id,
+        status: "approved",
+      });
+
+      if (!booking) {
+        return res.status(403).json({
+          message: "You are not authorized to track this container",
+        });
+      }
+    }
+
+    if (container.status !== "in-transit") {
+      return res.status(400).json({
+        message: "Container is not currently in transit",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Container location fetched successfully",
       container,
     });
   } catch (error) {
