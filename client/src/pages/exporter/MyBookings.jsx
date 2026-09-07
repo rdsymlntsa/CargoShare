@@ -118,47 +118,16 @@ const MyBookings = () => {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                  <div>
-                    <p className="text-sm text-gray-500">Requested Weight</p>
-
-                    <p className="font-semibold text-gray-800">
-                      {booking.requestedWeight} kg
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">Requested Volume</p>
-
-                    <p className="font-semibold text-gray-800">
-                      {booking.requestedVolume}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">Departure</p>
-
-                    <p className="font-semibold text-gray-800">
-                      {booking.container?.departureDate
-                        ? new Date(
-                            booking.container.departureDate,
-                          ).toLocaleDateString()
-                        : "N/A"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">Booking Date</p>
-
-                    <p className="font-semibold text-gray-800">
-                      {booking.createdAt
-                        ? new Date(booking.createdAt).toLocaleDateString()
-                        : "N/A"}
-                    </p>
-                  </div>
-                </div>
-
                 <div className="mt-6 flex flex-wrap gap-3">
+                  <button
+                    onClick={() =>
+                      navigate(`/exporter/bookings/${booking._id}`)
+                    }
+                    className="bg-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-teal-700"
+                  >
+                    View Details
+                  </button>
+
                   {booking.container?._id && (
                     <button
                       onClick={() =>
