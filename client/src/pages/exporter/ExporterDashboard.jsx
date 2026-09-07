@@ -19,7 +19,7 @@ const ExporterDashboard = () => {
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <h1
             className="cursor-pointer text-2xl font-bold"
-            onClick={() => navigate("/exporter/dashboard")}
+            onClick={() => navigate("/")}
           >
             CargoShare
           </h1>
@@ -58,9 +58,7 @@ const ExporterDashboard = () => {
 
       {/* Dashboard content */}
       <main className="mx-auto max-w-7xl px-6 py-8">
-        <h2 className="text-3xl font-bold text-gray-800">
-          Exporter Dashboard
-        </h2>
+        <h2 className="text-3xl font-bold text-gray-800">Exporter Dashboard</h2>
 
         <p className="mt-2 text-gray-600">
           Manage your shipments and bookings from here.
@@ -86,9 +84,7 @@ const ExporterDashboard = () => {
           </div>
 
           <div className="rounded-xl bg-white p-6 shadow">
-            <h3 className="text-lg font-semibold text-gray-800">
-              My Bookings
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-800">My Bookings</h3>
 
             <p className="mt-2 text-sm text-gray-500">
               View and manage your shipment bookings.

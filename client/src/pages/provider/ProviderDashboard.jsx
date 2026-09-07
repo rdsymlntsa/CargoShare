@@ -16,7 +16,12 @@ const ProviderDashboard = () => {
     <div className="min-h-screen bg-gray-100">
       {/* Navbar */}
       <nav className="bg-teal-700 text-white px-6 py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">CargoShare</h1>
+        <h1
+          onClick={() => navigate("/")}
+          className="cursor-pointer text-2xl font-bold"
+        >
+          CargoShare
+        </h1>
 
         <div className="flex gap-6 items-center">
           <button
