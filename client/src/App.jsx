@@ -24,6 +24,7 @@ import ProviderTracking from "./pages/provider/Tracking.jsx";
 import BookingHistory from "./pages/provider/BookingHistory.jsx";
 import BookingDetails from "./pages/BookingDetails.jsx";
 import Home from "./pages/Home.jsx";
+import Profile from "./pages/Profile.jsx";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -40,6 +41,15 @@ const App = () => {
         <Route path="/register" element={<Register />} />
 
         {/* Exporter */}
+        <Route
+          path="/exporter/profile"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter"]}>
+              <Profile />
+            </RoleProtectedRoute>
+          }
+        />
+
         <Route
           path="/exporter/dashboard"
           element={
@@ -113,6 +123,15 @@ const App = () => {
         />
 
         {/* Provider */}
+        <Route
+          path="/provider/profile"
+          element={
+            <RoleProtectedRoute allowedRoles={["provider"]}>
+              <Profile />
+            </RoleProtectedRoute>
+          }
+        />
+
         <Route
           path="/provider/dashboard"
           element={

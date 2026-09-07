@@ -57,6 +57,20 @@ export const logoutUser = createAsyncThunk(
   },
 );
 
+export const updateProfile = createAsyncThunk(
+  "auth/updateProfile",
+  async (profileData, { rejectWithValue }) => {
+    try {
+      const response = await api.patch("/auth/profile", profileData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Profile update failed",
+      );
+    }
+  },
+);
+
 const initialState = {
   user: null,
   isAuthenticated: false,
@@ -64,6 +78,21 @@ const initialState = {
   error: null,
   authChecked: false,
 };
+
+export const changePassword = createAsyncThunk(
+  "auth/changePassword",
+  async (passwordData, { rejectWithValue }) => {
+    try {
+      const response = await api.patch("/auth/change-password", passwordData);
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Password change failed",
+      );
+    }
+  },
+);
 
 const authSlice = createSlice({
   name: "auth",
@@ -137,6 +166,33 @@ const authSlice = createSlice({
         state.user = null;
         state.isAuthenticated = false;
         state.authChecked = true;
+      })
+
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.error = null;
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      .addCase(changePassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       })
 
       // Logout
