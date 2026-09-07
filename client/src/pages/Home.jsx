@@ -60,8 +60,13 @@ const Home = () => {
       </nav>
 
       {/* Hero */}
-      <section className="bg-teal-700 text-white px-6 py-20">
-        <div className="max-w-6xl mx-auto text-center">
+      <section
+        className="relative bg-cover bg-center bg-no-repeat text-white px-6 py-24"
+        style={{ backgroundImage: "url('/cargo.webp')" }}
+      >
+        <div className="absolute inset-0 bg-teal-900/40"></div>
+
+        <div className="relative max-w-6xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold leading-tight">
             Share Capacity. Move Smarter.
           </h2>
@@ -71,20 +76,31 @@ const Home = () => {
             unused container capacity easier to discover, book, and track.
           </p>
 
-          <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-            <button
-              onClick={() => navigate("/register")}
-              className="bg-white text-teal-700 px-7 py-3 rounded-lg font-semibold hover:bg-gray-100"
-            >
-              Get Started
-            </button>
+          <div className="mt-8">
+            {isAuthenticated ? (
+              <button
+                onClick={handleDashboard}
+                className="bg-white text-teal-700 px-7 py-3 rounded-lg font-semibold hover:bg-gray-100"
+              >
+                Go to Dashboard
+              </button>
+            ) : (
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <button
+                  onClick={() => navigate("/register")}
+                  className="bg-white text-teal-700 px-7 py-3 rounded-lg font-semibold hover:bg-gray-100"
+                >
+                  Get Started
+                </button>
 
-            <button
-              onClick={() => navigate("/login")}
-              className="border border-white px-7 py-3 rounded-lg font-semibold hover:bg-white hover:text-teal-700"
-            >
-              Login
-            </button>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="border border-white px-7 py-3 rounded-lg font-semibold hover:bg-white hover:text-teal-700"
+                >
+                  Login
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </section>
