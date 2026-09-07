@@ -23,6 +23,7 @@ import Tracking from "./pages/exporter/Tracking.jsx";
 import ProviderTracking from "./pages/provider/Tracking.jsx";
 import BookingHistory from "./pages/provider/BookingHistory.jsx";
 import BookingDetails from "./pages/BookingDetails.jsx";
+import Home from "./pages/Home.jsx";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -204,7 +205,7 @@ const App = () => {
         />
 
         {/* Default */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Home />} />
 
         {/* Unknown route */}
         <Route path="*" element={<Navigate to="/" replace />} />
