@@ -25,7 +25,7 @@ router.get(
 router.get(
   "/:id",
   authMiddleware,
-  roleMiddleware(["exporter"]),
+  roleMiddleware(["exporter", "provider"]),
   getBookingById,
 );
 router.get(

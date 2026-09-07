@@ -22,6 +22,7 @@ import ShipmentTracking from "./pages/exporter/ShipmentTracking.jsx";
 import Tracking from "./pages/exporter/Tracking.jsx";
 import ProviderTracking from "./pages/provider/Tracking.jsx";
 import BookingHistory from "./pages/provider/BookingHistory.jsx";
+import BookingDetails from "./pages/BookingDetails.jsx";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -84,6 +85,15 @@ const App = () => {
         />
 
         <Route
+          path="/exporter/bookings/:id"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter"]}>
+              <BookingDetails />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
           path="/exporter/tracking"
           element={
             <RoleProtectedRoute allowedRoles={["exporter"]}>
@@ -125,6 +135,15 @@ const App = () => {
           element={
             <RoleProtectedRoute allowedRoles={["provider"]}>
               <BookingHistory />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/provider/bookings/:id"
+          element={
+            <RoleProtectedRoute allowedRoles={["provider"]}>
+              <BookingDetails />
             </RoleProtectedRoute>
           }
         />

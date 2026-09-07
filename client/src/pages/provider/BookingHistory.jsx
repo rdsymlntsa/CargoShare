@@ -161,6 +161,17 @@ const BookingHistory = () => {
                         : "N/A"}
                     </p>
                   </div>
+
+                  <div className="mt-5 flex justify-end">
+                    <button
+                      onClick={() =>
+                        navigate(`/provider/bookings/${booking._id}`)
+                      }
+                      className="rounded-lg bg-teal-600 px-5 py-2 font-medium text-white hover:bg-teal-700"
+                    >
+                      View Details
+                    </button>
+                  </div>
                 </div>
               );
             })}

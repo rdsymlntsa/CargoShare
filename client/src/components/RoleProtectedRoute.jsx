@@ -18,6 +18,14 @@ const RoleProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/login" replace />;
   }
 
+  console.log("AUTH DEBUG:", {
+    user,
+    role: user?.role,
+    isAuthenticated,
+    authChecked,
+    allowedRoles,
+  });
+
   if (!allowedRoles.includes(user.role)) {
     return <Navigate to="/" replace />;
   }

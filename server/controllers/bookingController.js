@@ -88,10 +88,29 @@ export const getMyBookings = async (req, res) => {
 
 export const getBookingById = async (req, res) => {
   try {
-    const booking = await Booking.findOne({
-      _id: req.params.id,
-      exporter: req.user._id,
-    }).populate("container");
+    let booking;
+
+    if (req.user.role === "exporter") {
+      booking = await Booking.findOne({
+        _id: req.params.id,
+        exporter: req.user._id,
+      })
+        .populate("container")
+        .populate("exporter", "name email phone");
+    } else if (req.user.role === "provider") {
+      const containers = await Container.find({
+        provider: req.user._id,
+      }).select("_id");
+
+      const containerIds = containers.map((container) => container._id);
+
+      booking = await Booking.findOne({
+        _id: req.params.id,
+        container: { $in: containerIds },
+      })
+        .populate("container")
+        .populate("exporter", "name email phone");
+    }
 
     if (!booking) {
       return res.status(404).json({
