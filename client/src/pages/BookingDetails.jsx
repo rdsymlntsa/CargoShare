@@ -239,18 +239,27 @@ const BookingDetails = () => {
           )}
 
           {/* Tracking */}
-          {user?.role === "exporter" &&
-            currentBooking.status === "approved" &&
-            container?.status === "in-transit" && (
-              <button
-                onClick={() =>
-                  navigate(`/exporter/containers/${container._id}/tracking`)
-                }
-                className="w-full mt-8 bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700"
-              >
-                Track Shipment
-              </button>
-            )}
+          <div className="mt-8 space-y-3">
+            <button
+              onClick={() => navigate(`/bookings/${currentBooking._id}/chat`)}
+              className="w-full bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700"
+            >
+              Chat
+            </button>
+
+            {user?.role === "exporter" &&
+              currentBooking.status === "approved" &&
+              container?.status === "in-transit" && (
+                <button
+                  onClick={() =>
+                    navigate(`/exporter/containers/${container._id}/tracking`)
+                  }
+                  className="w-full bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700"
+                >
+                  Track Shipment
+                </button>
+              )}
+          </div>
         </div>
       </main>
     </div>
