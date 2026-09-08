@@ -8,6 +8,7 @@ import bookingRoutes from "./routes/bookingRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import messageRoutes from "./routes/messageRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -29,6 +30,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/containers", containerRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/messages", messageRoutes);
 
 // app.get("/api/auth/me", authMiddleware, (req, res) => {
 //   res.json({
