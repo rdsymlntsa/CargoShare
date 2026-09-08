@@ -2,45 +2,40 @@ import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 
-import api from "../services/api.js"
+import {
+  getMessages,
+  sendMessage,
+  addMessage,
+  clearMessages,
+} from "../features/messages/messageSlice.js";
+
 import socket from "../socket.js";
 
 const Chat = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const { user } = useSelector((state) => state.auth);
 
-  const [messages, setMessages] = useState([]);
+  const { messages, loading, sending, error } = useSelector(
+    (state) => state.messages,
+  );
+
   const [messageText, setMessageText] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const response = await api.get(`/messages/${bookingId}`);
+    dispatch(clearMessages());
+    dispatch(getMessages(bookingId));
 
-        setMessages(response.data.messages);
-      } catch (error) {
-        setError(error.response?.data?.message || "Failed to load messages");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMessages();
-  }, [bookingId]);
-
-  useEffect(() => {
     socket.connect();
 
     socket.emit("joinBooking", bookingId);
 
     const handleNewMessage = (newMessage) => {
-      setMessages((previousMessages) => [...previousMessages, newMessage]);
+      dispatch(addMessage(newMessage));
     };
 
     socket.on("newMessage", handleNewMessage);
@@ -48,8 +43,9 @@ const Chat = () => {
     return () => {
       socket.off("newMessage", handleNewMessage);
       socket.disconnect();
+      dispatch(clearMessages());
     };
-  }, [bookingId]);
+  }, [bookingId, dispatch]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
@@ -62,38 +58,25 @@ const Chat = () => {
 
     const trimmedMessage = messageText.trim();
 
-    if (!trimmedMessage) {
+    if (!trimmedMessage || sending) {
       return;
     }
 
-    try {
-      setError("");
-
-      const response = await api.post("/messages", {
+    const result = await dispatch(
+      sendMessage({
         bookingId,
         message: trimmedMessage,
-      });
+      }),
+    );
 
+    if (sendMessage.fulfilled.match(result)) {
       setMessageText("");
-
-      // The message will also arrive through Socket.IO.
-      // We don't add it here to avoid displaying it twice.
-      console.log(response.data);
-    } catch (error) {
-      setError(error.response?.data?.message || "Failed to send message");
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-gray-600">Loading chat...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Navbar */}
       <nav className="bg-teal-700 text-white px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <h1
@@ -112,8 +95,10 @@ const Chat = () => {
         </div>
       </nav>
 
+      {/* Chat */}
       <main className="max-w-4xl mx-auto px-6 py-8">
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          {/* Header */}
           <div className="bg-teal-600 text-white px-6 py-4">
             <h2 className="text-xl font-semibold">Booking Chat</h2>
 
@@ -122,14 +107,20 @@ const Chat = () => {
             </p>
           </div>
 
+          {/* Error */}
           {error && (
             <div className="mx-6 mt-4 bg-red-100 text-red-700 px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
 
+          {/* Messages */}
           <div className="h-125 overflow-y-auto p-6 space-y-4">
-            {messages.length === 0 ? (
+            {loading ? (
+              <div className="h-full flex items-center justify-center">
+                <p className="text-gray-500">Loading messages...</p>
+              </div>
+            ) : messages.length === 0 ? (
               <div className="h-full flex items-center justify-center">
                 <p className="text-gray-500">
                   No messages yet. Start the conversation.
@@ -138,7 +129,6 @@ const Chat = () => {
             ) : (
               messages.map((message) => {
                 const isOwnMessage =
-                  message.sender?._id === user?._id ||
                   message.sender?._id?.toString() === user?._id?.toString();
 
                 return (
@@ -159,7 +149,7 @@ const Chat = () => {
                         {message.sender?.name || "User"}
                       </p>
 
-                      <p>{message.message}</p>
+                      <p className="wrap-break-word">{message.message}</p>
 
                       <p
                         className={`text-xs mt-2 ${
@@ -180,6 +170,7 @@ const Chat = () => {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Input */}
           <form
             onSubmit={handleSendMessage}
             className="border-t p-4 flex gap-3"
@@ -195,10 +186,10 @@ const Chat = () => {
 
             <button
               type="submit"
-              disabled={!messageText.trim()}
+              disabled={!messageText.trim() || sending}
               className="bg-teal-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-teal-700 disabled:opacity-50"
             >
-              Send
+              {sending ? "Sending..." : "Send"}
             </button>
           </form>
         </div>

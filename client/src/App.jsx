@@ -25,7 +25,7 @@ import BookingHistory from "./pages/provider/BookingHistory.jsx";
 import BookingDetails from "./pages/BookingDetails.jsx";
 import Home from "./pages/Home.jsx";
 import Profile from "./pages/Profile.jsx";
-
+import Chat from "./pages/Chat.jsx";
 import socket from "./socket.js";
 
 const App = () => {
@@ -229,6 +229,15 @@ const App = () => {
           element={
             <RoleProtectedRoute allowedRoles={["admin"]}>
               <AdminDashboard />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/bookings/:bookingId/chat"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter", "provider"]}>
+              <Chat />
             </RoleProtectedRoute>
           }
         />
