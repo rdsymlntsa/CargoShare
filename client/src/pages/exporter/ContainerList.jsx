@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -15,6 +15,15 @@ const ContainerList = () => {
     (state) => state.containers,
   );
 
+  const [filters, setFilters] = useState({
+    origin: "",
+    destination: "",
+    departureDate: "",
+    minWeight: "",
+    minVolume: "",
+    maxPrice: "",
+  });
+
   useEffect(() => {
     dispatch(getContainers());
 
@@ -22,6 +31,36 @@ const ContainerList = () => {
       dispatch(clearContainerError());
     };
   }, [dispatch]);
+
+  const handleChange = (e) => {
+    setFilters({
+      ...filters,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+
+    const activeFilters = Object.fromEntries(
+      Object.entries(filters).filter(([_, value]) => value !== ""),
+    );
+
+    dispatch(getContainers(activeFilters));
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      origin: "",
+      destination: "",
+      departureDate: "",
+      minWeight: "",
+      minVolume: "",
+      maxPrice: "",
+    });
+
+    dispatch(getContainers());
+  };
 
   if (loading && containers.length === 0) {
     return (
@@ -60,6 +99,127 @@ const ContainerList = () => {
           Browse containers available for booking.
         </p>
 
+        {/* Filters */}
+        <form
+          onSubmit={handleSearch}
+          className="mt-6 rounded-xl bg-white p-5 shadow"
+        >
+          <h3 className="text-lg font-semibold text-gray-800">
+            Search Containers
+          </h3>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Origin
+              </label>
+
+              <input
+                type="text"
+                name="origin"
+                value={filters.origin}
+                onChange={handleChange}
+                placeholder="e.g. Delhi"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-teal-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Destination
+              </label>
+
+              <input
+                type="text"
+                name="destination"
+                value={filters.destination}
+                onChange={handleChange}
+                placeholder="e.g. Mumbai"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-teal-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Departure Date
+              </label>
+
+              <input
+                type="date"
+                name="departureDate"
+                value={filters.departureDate}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-teal-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Minimum Weight (kg)
+              </label>
+
+              <input
+                type="number"
+                name="minWeight"
+                value={filters.minWeight}
+                onChange={handleChange}
+                min="0"
+                placeholder="e.g. 5000"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-teal-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Minimum Volume (m³)
+              </label>
+
+              <input
+                type="number"
+                name="minVolume"
+                value={filters.minVolume}
+                onChange={handleChange}
+                min="0"
+                placeholder="e.g. 10"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-teal-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Maximum Price (₹/kg)
+              </label>
+
+              <input
+                type="number"
+                name="maxPrice"
+                value={filters.maxPrice}
+                onChange={handleChange}
+                min="0"
+                placeholder="e.g. 50"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-teal-500"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="submit"
+              className="rounded-lg bg-teal-600 px-5 py-2 font-medium text-white hover:bg-teal-700"
+            >
+              Search
+            </button>
+
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className="rounded-lg border border-gray-300 bg-white px-5 py-2 font-medium text-gray-700 hover:bg-gray-100"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </form>
+
         {error && (
           <div className="mt-6 rounded-lg bg-red-100 px-4 py-3 text-red-600">
             {error}
@@ -69,7 +229,7 @@ const ContainerList = () => {
         {!error && containers.length === 0 && (
           <div className="mt-8 rounded-xl bg-white p-8 text-center shadow">
             <p className="text-gray-500">
-              No containers are currently available.
+              No containers match your search criteria.
             </p>
           </div>
         )}

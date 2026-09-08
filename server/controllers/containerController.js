@@ -150,25 +150,43 @@ export const createContainer = async (req, res) => {
 
 export const getContainers = async (req, res) => {
   try {
-    const { origin, destination, departureDate, minWeight, minVolume } =
-      req.query;
+    const {
+      origin,
+      destination,
+      departureDate,
+      minWeight,
+      minVolume,
+      maxPrice,
+    } = req.query;
 
     const filter = {
       status: "available",
     };
 
     if (origin) {
-      filter.origin = { $regex: origin, $options: "i" };
+      filter.origin = {
+        $regex: origin,
+        $options: "i",
+      };
     }
 
     if (destination) {
-      filter.destination = { $regex: destination, $options: "i" };
+      filter.destination = {
+        $regex: destination,
+        $options: "i",
+      };
     }
 
     if (departureDate) {
       const startDate = new Date(departureDate);
-      const endDate = new Date(departureDate);
 
+      if (Number.isNaN(startDate.getTime())) {
+        return res.status(400).json({
+          message: "Invalid departure date",
+        });
+      }
+
+      const endDate = new Date(startDate);
       endDate.setDate(endDate.getDate() + 1);
 
       filter.departureDate = {
@@ -177,15 +195,45 @@ export const getContainers = async (req, res) => {
       };
     }
 
-    if (minWeight) {
+    if (minWeight !== undefined) {
+      const weight = Number(minWeight);
+
+      if (!Number.isFinite(weight) || weight < 0) {
+        return res.status(400).json({
+          message: "Minimum weight must be a valid positive number",
+        });
+      }
+
       filter.availableWeightCapacity = {
-        $gte: Number(minWeight),
+        $gte: weight,
       };
     }
 
-    if (minVolume) {
+    if (minVolume !== undefined) {
+      const volume = Number(minVolume);
+
+      if (!Number.isFinite(volume) || volume < 0) {
+        return res.status(400).json({
+          message: "Minimum volume must be a valid positive number",
+        });
+      }
+
       filter.availableVolumeCapacity = {
-        $gte: Number(minVolume),
+        $gte: volume,
+      };
+    }
+
+    if (maxPrice !== undefined) {
+      const price = Number(maxPrice);
+
+      if (!Number.isFinite(price) || price < 0) {
+        return res.status(400).json({
+          message: "Maximum price must be a valid positive number",
+        });
+      }
+
+      filter.pricePerKg = {
+        $lte: price,
       };
     }
 
@@ -193,7 +241,7 @@ export const getContainers = async (req, res) => {
       .populate("provider", "name email phone")
       .sort({ departureDate: 1 });
 
-    res.json({
+    res.status(200).json({
       count: containers.length,
       containers,
     });
