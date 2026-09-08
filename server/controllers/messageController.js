@@ -1,5 +1,6 @@
 import Message from "../models/Message.js";
 import Booking from "../models/Booking.js";
+import { io } from "../server.js";
 
 export const sendMessage = async (req, res) => {
   try {
@@ -42,6 +43,8 @@ export const sendMessage = async (req, res) => {
     });
 
     const populatedMessage = await newMessage.populate("sender", "name role");
+
+    io.to(`booking:${bookingId}`).emit("newMessage", populatedMessage);
 
     res.status(201).json({
       message: "Message sent successfully",

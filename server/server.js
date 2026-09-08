@@ -9,16 +9,16 @@ import adminRoutes from "./routes/adminRoutes.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import messageRoutes from "./routes/messageRoutes.js";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 dotenv.config();
 const app = express();
+const server = createServer(app);
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://cargoshare-green.vercel.app",
-    ],
+    origin: ["http://localhost:5173", "https://cargoshare-green.vercel.app"],
     credentials: true,
   }),
 );
@@ -46,6 +46,27 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+export const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:5173", "https://cargoshare-green.vercel.app"],
+    credentials: true,
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
+  socket.on("joinBooking", (bookingId) => {
+    socket.join(`booking:${bookingId}`);
+
+    console.log(`Socket ${socket.id} joined booking ${bookingId}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

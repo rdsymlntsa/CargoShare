@@ -26,12 +26,22 @@ import BookingDetails from "./pages/BookingDetails.jsx";
 import Home from "./pages/Home.jsx";
 import Profile from "./pages/Profile.jsx";
 
+import socket from "./socket.js";
+
 const App = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
     dispatch(getCurrentUser());
   }, [dispatch]);
+
+  useEffect(() => {
+    socket.connect();
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <BrowserRouter>
