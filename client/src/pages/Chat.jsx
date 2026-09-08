@@ -30,17 +30,21 @@ const Chat = () => {
     dispatch(clearMessages());
     dispatch(getMessages(bookingId));
 
-    socket.connect();
-
-    socket.emit("joinBooking", bookingId);
-
     const handleNewMessage = (newMessage) => {
       dispatch(addMessage(newMessage));
     };
 
+    const handleConnect = () => {
+      socket.emit("joinBooking", bookingId);
+    };
+
+    socket.on("connect", handleConnect);
     socket.on("newMessage", handleNewMessage);
 
+    socket.connect();
+
     return () => {
+      socket.off("connect", handleConnect);
       socket.off("newMessage", handleNewMessage);
       socket.disconnect();
       dispatch(clearMessages());
