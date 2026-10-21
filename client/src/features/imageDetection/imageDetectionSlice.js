@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 const API_URL =
   import.meta.env.VITE_YOLO_API_URL ||
-  "https://yolo-prediction-api.onrender.com";
+  "https://yolo-api-r03g.onrender.com";
 
 export const predictImage = createAsyncThunk(
   "imageDetection/predictImage",
