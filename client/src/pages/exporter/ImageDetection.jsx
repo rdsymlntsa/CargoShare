@@ -17,6 +17,7 @@ const ImageDetection = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [preview, setPreview] = useState("");
   const [fileError, setFileError] = useState("");
+  const [showCoordinates, setShowCoordinates] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -48,6 +49,7 @@ const ImageDetection = () => {
 
     setSelectedImage(file);
     setPreview(URL.createObjectURL(file));
+    setShowCoordinates(false);
   };
 
   const handleDetection = () => {
@@ -60,12 +62,22 @@ const ImageDetection = () => {
     setSelectedImage(null);
     setPreview("");
     setFileError("");
+    setShowCoordinates(false);
     dispatch(clearPrediction());
 
     const input = document.getElementById("cargo-image");
 
     if (input) input.value = "";
   };
+
+  const detections = Array.isArray(result?.detections) ? result.detections : [];
+
+  const totalDetections =
+    typeof result?.count === "number" ? result.count : detections.length;
+
+  const uniqueClasses = new Set(
+    detections.map((item) => item.class_id ?? item.class_name),
+  ).size;
 
   return (
     <div className="min-h-screen bg-[#080d19] text-slate-100">
@@ -107,7 +119,7 @@ const ImageDetection = () => {
 
           <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-400 sm:text-base">
             Upload a cargo image to identify objects, inspect detection
-            confidence, and view AI-generated bounding boxes in seconds.
+            confidence, and view AI-generated bounding boxes.
           </p>
         </div>
 
@@ -151,6 +163,7 @@ const ImageDetection = () => {
                   </p>
                 </>
               )}
+
               <input
                 id="cargo-image"
                 type="file"
@@ -216,7 +229,7 @@ const ImageDetection = () => {
           </section>
 
           <section className="rounded-2xl border border-white/10 bg-[#101827] p-5 shadow-2xl shadow-black/20 sm:p-7">
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-6 flex items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold text-white">Analysis results</h2>
                 <p className="mt-1 text-sm text-slate-400">
@@ -225,7 +238,7 @@ const ImageDetection = () => {
               </div>
 
               {result && (
-                <span className="rounded-full border border-teal-300/20 bg-teal-300/10 px-3 py-1 text-xs text-teal-300">
+                <span className="shrink-0 rounded-full border border-teal-300/20 bg-teal-300/10 px-3 py-1 text-xs text-teal-300">
                   Complete
                 </span>
               )}
@@ -257,18 +270,14 @@ const ImageDetection = () => {
                   <div className="rounded-xl border border-white/10 bg-[#0b1220] p-4">
                     <p className="text-xs text-slate-500">Total detections</p>
                     <p className="mt-2 text-3xl font-bold text-teal-300">
-                      {result.count}
+                      {totalDetections}
                     </p>
                   </div>
 
                   <div className="rounded-xl border border-white/10 bg-[#0b1220] p-4">
                     <p className="text-xs text-slate-500">Unique classes</p>
                     <p className="mt-2 text-3xl font-bold text-white">
-                      {
-                        new Set(
-                          result.detections?.map((item) => item.class_id) || [],
-                        ).size
-                      }
+                      {uniqueClasses}
                     </p>
                   </div>
                 </div>
@@ -286,60 +295,89 @@ const ImageDetection = () => {
                   </div>
                 )}
 
-                <div>
-                  <h3 className="mb-3 text-sm font-semibold text-slate-200">
-                    Detected objects
-                  </h3>
+                {totalDetections === 0 || detections.length === 0 ? (
+                  <div className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-4">
+                    <p className="font-medium text-amber-200">
+                      No objects detected
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-400">
+                      Try a clearer image with cargo objects fully visible and
+                      good lighting.
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold text-slate-200">
+                      Detected objects
+                    </h3>
 
-                  {result.detections?.length > 0 ? (
                     <div className="max-h-72 space-y-3 overflow-y-auto pr-1">
-                      {result.detections.map((item, index) => (
-                        <div
-                          key={`${item.class_id}-${index}`}
-                          className="rounded-xl border border-white/10 bg-[#0b1220] p-4"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate font-medium text-white">
-                                {item.class_name}
-                              </p>
-                              <p className="mt-1 text-xs text-slate-500">
-                                Class ID: {item.class_id}
-                              </p>
+                      {detections.map((item, index) => {
+                        const confidence = Number(item.confidence);
+                        const validConfidence = Number.isFinite(confidence)
+                          ? Math.min(100, Math.max(0, confidence * 100))
+                          : null;
+
+                        return (
+                          <div
+                            key={`${item.class_id ?? item.class_name}-${index}`}
+                            className="rounded-xl border border-white/10 bg-[#0b1220] p-4"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate font-medium text-white">
+                                  {item.class_name || "Unknown object"}
+                                </p>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  Class ID: {item.class_id ?? "N/A"}
+                                </p>
+                              </div>
+
+                              <span className="shrink-0 text-sm font-semibold text-teal-300">
+                                {validConfidence === null
+                                  ? "N/A"
+                                  : `${validConfidence.toFixed(1)}%`}
+                              </span>
                             </div>
 
-                            <span className="shrink-0 text-sm font-semibold text-teal-300">
-                              {(item.confidence * 100).toFixed(1)}%
-                            </span>
-                          </div>
+                            {validConfidence !== null && (
+                              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+                                <div
+                                  className="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-400"
+                                  style={{ width: `${validConfidence}%` }}
+                                />
+                              </div>
+                            )}
 
-                          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-400"
-                              style={{
-                                width: `${Math.min(
-                                  100,
-                                  Math.max(0, item.confidence * 100),
-                                )}%`,
-                              }}
-                            />
-                          </div>
+                            {Array.isArray(item.box) && (
+                              <div className="mt-3">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setShowCoordinates((previous) => !previous)
+                                  }
+                                  className="text-xs text-slate-400 transition hover:text-teal-300"
+                                >
+                                  {showCoordinates
+                                    ? "Hide bounding-box coordinates"
+                                    : "Show bounding-box coordinates"}
+                                </button>
 
-                          <p className="mt-2 text-xs text-slate-500">
-                            Bounding box:{" "}
-                            {item.box
-                              ?.map((value) => value.toFixed(1))
-                              .join(", ")}
-                          </p>
-                        </div>
-                      ))}
+                                {showCoordinates && (
+                                  <p className="mt-2 break-words text-xs text-slate-500">
+                                    {item.box
+                                      .map((value) => Number(value).toFixed(1))
+                                      .join(", ")}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  ) : (
-                    <p className="rounded-xl border border-white/10 bg-[#0b1220] p-4 text-sm text-slate-400">
-                      No objects detected in this image.
-                    </p>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 <button
                   type="button"
