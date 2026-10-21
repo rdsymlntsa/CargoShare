@@ -65,7 +65,7 @@ const ExporterDashboard = () => {
         </p>
 
         {/* Dashboard cards */}
-        <div className="mt-8 grid gap-6 md:grid-cols-3">
+        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl bg-white p-6 shadow">
             <h3 className="text-lg font-semibold text-gray-800">
               Available Containers
@@ -112,6 +112,29 @@ const ExporterDashboard = () => {
               className="mt-5 rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
             >
               Track Shipment
+            </button>
+          </div>
+
+          {/* AI Cargo Detection */}
+          <div className="rounded-xl border border-teal-100 bg-white p-6 shadow transition hover:-translate-y-1 hover:shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-800">
+                AI Cargo Detection
+              </h3>
+
+              <span className="rounded-lg bg-teal-50 px-3 py-2 text-xl">✦</span>
+            </div>
+
+            <p className="mt-2 text-sm text-gray-500">
+              Upload cargo images and use AI to detect objects with bounding
+              boxes and confidence scores.
+            </p>
+
+            <button
+              onClick={() => navigate("/exporter/image-detection")}
+              className="mt-5 rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
+            >
+              Open AI Detection
             </button>
           </div>
         </div>

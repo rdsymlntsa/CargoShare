@@ -25,6 +25,7 @@ import BookingDetails from "./pages/BookingDetails.jsx";
 import Home from "./pages/Home.jsx";
 import Profile from "./pages/Profile.jsx";
 import Chat from "./pages/Chat.jsx";
+import ImageDetection from "./pages/exporter/ImageDetection.jsx";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -118,6 +119,15 @@ const App = () => {
           element={
             <RoleProtectedRoute allowedRoles={["exporter"]}>
               <ShipmentTracking />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/exporter/image-detection"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter"]}>
+              <ImageDetection />
             </RoleProtectedRoute>
           }
         />
