@@ -1,18 +1,49 @@
 import { useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-
 import {
   getMyContainerById,
   departContainer,
   deliverContainer,
   clearContainerError,
-  clearCurrentContainer,
-} from "../../features/containers/containerSlice.js";
+} from "../../features/containers/containerSlice";
+
+const formatDate = (date) => {
+  if (!date) return "Not specified";
+
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const formatDateTime = (date) => {
+  if (!date) return "Not specified";
+
+  return new Date(date).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const getCheckpoints = (container) => [
+  { name: container.origin, type: "Origin" },
+  ...(container.intermediateStops || []).map((stop) => ({
+    name: typeof stop === "string" ? stop : stop.name,
+    type: "Intermediate Stop",
+    expectedArrival: typeof stop === "string" ? null : stop.expectedArrival,
+    expectedDeparture: typeof stop === "string" ? null : stop.expectedDeparture,
+  })),
+  { name: container.destination, type: "Destination" },
+];
 
 const ProviderContainerDetails = () => {
-  const navigate = useNavigate();
   const { id } = useParams();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const { currentContainer, loading, error } = useSelector(
@@ -20,10 +51,10 @@ const ProviderContainerDetails = () => {
   );
 
   useEffect(() => {
+    dispatch(clearContainerError());
     dispatch(getMyContainerById(id));
 
     return () => {
-      dispatch(clearCurrentContainer());
       dispatch(clearContainerError());
     };
   }, [dispatch, id]);
@@ -32,7 +63,7 @@ const ProviderContainerDetails = () => {
     const result = await dispatch(departContainer(id));
 
     if (departContainer.fulfilled.match(result)) {
-      dispatch(getMyContainerById(id));
+      await dispatch(getMyContainerById(id));
     }
   };
 
@@ -40,182 +71,325 @@ const ProviderContainerDetails = () => {
     const result = await dispatch(deliverContainer(id));
 
     if (deliverContainer.fulfilled.match(result)) {
-      dispatch(getMyContainerById(id));
+      await dispatch(getMyContainerById(id));
     }
-  };
-
-  const formatDate = (date) => {
-    return date ? new Date(date).toLocaleDateString() : "Not set";
   };
 
   if (loading && !currentContainer) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <p className="text-gray-600">Loading container...</p>
+      <div className="p-6 text-center text-gray-600">
+        Loading container details...
       </div>
     );
   }
 
   if (error && !currentContainer) {
+    return <div className="p-6 text-center text-red-600">{error}</div>;
+  }
+
+  if (!currentContainer || currentContainer._id !== id) {
     return (
-      <div className="min-h-screen bg-gray-100">
-        <nav className="bg-teal-600 text-white px-6 py-4">
-          <h1 className="text-xl font-bold">CargoShare</h1>
-        </nav>
+      <div className="p-6 text-center">
+        {loading ? (
+          <p className="text-gray-600">Loading container details...</p>
+        ) : (
+          <>
+            <p className="text-gray-600">Container not found.</p>
 
-        <main className="max-w-3xl mx-auto px-6 py-8">
-          <div className="bg-red-100 text-red-700 px-4 py-3 rounded-lg">
-            {error}
-          </div>
+            {error && <p className="mt-2 text-red-600">{error}</p>}
 
-          <button
-            onClick={() => navigate("/provider/containers")}
-            className="mt-5 bg-teal-600 text-white px-5 py-3 rounded-lg font-medium"
-          >
-            Back to My Containers
-          </button>
-        </main>
+            <button
+              onClick={() => navigate("/provider/containers")}
+              className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            >
+              Back to My Containers
+            </button>
+          </>
+        )}
       </div>
     );
   }
 
-  if (!currentContainer) {
-    return null;
-  }
-
   const container = currentContainer;
+  const checkpoints = getCheckpoints(container);
+  const segments = container.segments || [];
+  const expectedSegmentCount = Math.max(checkpoints.length - 1, 0);
+
+  const renderCapacityBar = (available, total, colorClass) => {
+    const percentage =
+      Number(total) > 0
+        ? Math.min(100, Math.max(0, (Number(available) / Number(total)) * 100))
+        : 0;
+
+    return (
+      <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+        <div
+          className={`h-full rounded-full ${colorClass}`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-teal-600 text-white px-6 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">CargoShare</h1>
-
-        <button
-          onClick={() => navigate("/provider/dashboard")}
-          className="bg-white text-teal-600 px-4 py-2 rounded-lg font-medium"
-        >
-          Dashboard
-        </button>
-      </nav>
-
-      <main className="max-w-4xl mx-auto px-6 py-6">
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="mx-auto max-w-5xl">
         <button
           onClick={() => navigate("/provider/containers")}
-          className="text-teal-600 font-medium mb-4"
+          className="mb-5 text-blue-600 hover:underline"
         >
           ← Back to My Containers
         </button>
 
-        <div className="bg-white rounded-xl shadow-md p-6">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+        <div className="rounded-xl bg-white p-6 shadow">
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                {container.containerNumber}
-              </h2>
+              <h1 className="text-3xl font-bold text-gray-800">
+                Container {container.containerNumber}
+              </h1>
 
-              <p className="text-gray-600 mt-1">
+              <p className="mt-2 text-gray-600">
                 {container.origin} → {container.destination}
               </p>
             </div>
 
-            <span className="self-start sm:self-auto bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium capitalize">
+            <span
+              className={`rounded-full px-3 py-1 text-sm font-medium ${
+                container.status === "available"
+                  ? "bg-green-100 text-green-700"
+                  : container.status === "in-transit"
+                    ? "bg-blue-100 text-blue-700"
+                    : container.status === "full"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : container.status === "delivered"
+                        ? "bg-gray-200 text-gray-700"
+                        : "bg-gray-100 text-gray-600"
+              }`}
+            >
               {container.status}
             </span>
           </div>
 
-          {/* Container Information */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-xs text-gray-500">Departure</p>
-              <p className="font-medium text-gray-800 mt-1">
+          {error && (
+            <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-600">
+              {error}
+            </p>
+          )}
+
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-lg bg-gray-50 p-4">
+              <p className="text-sm text-gray-500">Departure Date</p>
+              <p className="mt-1 font-medium text-gray-800">
                 {formatDate(container.departureDate)}
               </p>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-xs text-gray-500">Arrival</p>
-              <p className="font-medium text-gray-800 mt-1">
+            <div className="rounded-lg bg-gray-50 p-4">
+              <p className="text-sm text-gray-500">Arrival Date</p>
+              <p className="mt-1 font-medium text-gray-800">
                 {formatDate(container.arrivalDate)}
               </p>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-xs text-gray-500">Weight Available</p>
-
-              <p className="font-medium text-gray-800 mt-1">
-                {container.availableWeightCapacity} kg
-              </p>
-
-              <p className="text-xs text-gray-500">
-                of {container.totalWeightCapacity} kg
+            <div className="rounded-lg bg-gray-50 p-4">
+              <p className="text-sm text-gray-500">Price per kg</p>
+              <p className="mt-1 font-medium text-gray-800">
+                ₹{container.pricePerKg}
               </p>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-xs text-gray-500">Volume Available</p>
-
-              <p className="font-medium text-gray-800 mt-1">
-                {container.availableVolumeCapacity} m³
+            <div className="rounded-lg bg-gray-50 p-4">
+              <p className="text-sm text-gray-500">Available Weight</p>
+              <p className="mt-1 font-medium text-gray-800">
+                {container.availableWeightCapacity} /{" "}
+                {container.totalWeightCapacity} kg
               </p>
+            </div>
 
-              <p className="text-xs text-gray-500">
-                of {container.totalVolumeCapacity} m³
+            <div className="rounded-lg bg-gray-50 p-4">
+              <p className="text-sm text-gray-500">Available Volume</p>
+              <p className="mt-1 font-medium text-gray-800">
+                {container.availableVolumeCapacity} /{" "}
+                {container.totalVolumeCapacity} m³
+              </p>
+            </div>
+
+            <div className="rounded-lg bg-gray-50 p-4">
+              <p className="text-sm text-gray-500">Intermediate Stops</p>
+              <p className="mt-1 font-medium text-gray-800">
+                {(container.intermediateStops || []).length}
               </p>
             </div>
           </div>
 
-          {/* Pricing */}
-          <div className="mt-3 bg-gray-50 rounded-lg p-3">
-            <p className="text-xs text-gray-500">Pricing</p>
+          <section className="mb-8">
+            <h2 className="mb-4 text-xl font-semibold text-gray-800">
+              Complete Route and Schedule
+            </h2>
 
-            <p className="font-medium text-gray-800 mt-1">
-              ₹{container.pricePerKg} per kg
-            </p>
-          </div>
+            <div className="space-y-3">
+              {checkpoints.map((checkpoint, index) => (
+                <div key={`${checkpoint.name}-${index}`} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`mt-1 h-3 w-3 rounded-full ${
+                        index === 0
+                          ? "bg-green-500"
+                          : index === checkpoints.length - 1
+                            ? "bg-red-500"
+                            : "bg-blue-500"
+                      }`}
+                    />
 
-          {/* Actions */}
+                    {index < checkpoints.length - 1 && (
+                      <div className="mt-1 min-h-6 w-0.5 flex-1 bg-gray-300" />
+                    )}
+                  </div>
 
-          {/* Depart */}
-          {container.status === "available" && (
-            <button
-              onClick={handleDepart}
-              disabled={loading}
-              className="w-full mt-5 bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? "Departing..." : "Depart Container"}
-            </button>
-          )}
+                  <div className="pb-3">
+                    <p className="font-medium text-gray-800">
+                      {checkpoint.name || "Unnamed checkpoint"}
+                    </p>
 
-          {/* Live Tracking */}
-          {container.status === "in-transit" && (
-            <>
+                    <p className="text-xs text-gray-500">{checkpoint.type}</p>
+
+                    {checkpoint.expectedArrival && (
+                      <p className="mt-1 text-sm text-gray-600">
+                        Expected arrival:{" "}
+                        {formatDateTime(checkpoint.expectedArrival)}
+                      </p>
+                    )}
+
+                    {checkpoint.expectedDeparture && (
+                      <p className="text-sm text-gray-600">
+                        Expected departure:{" "}
+                        {formatDateTime(checkpoint.expectedDeparture)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="mb-4 text-xl font-semibold text-gray-800">
+              Segment Capacities
+            </h2>
+
+            {segments.length === expectedSegmentCount && segments.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {segments.map((segment, index) => (
+                  <div
+                    key={
+                      segment._id || `${segment.from}-${segment.to}-${index}`
+                    }
+                    className="rounded-lg border border-gray-200 p-4"
+                  >
+                    <h3 className="font-semibold text-gray-800">
+                      {segment.from} → {segment.to}
+                    </h3>
+
+                    <div className="mt-3 space-y-3 text-sm text-gray-600">
+                      <div>
+                        <div className="mb-1 flex justify-between gap-2">
+                          <span>Available weight</span>
+                          <span>
+                            {segment.availableWeightCapacity} /{" "}
+                            {segment.totalWeightCapacity} kg
+                          </span>
+                        </div>
+
+                        {renderCapacityBar(
+                          segment.availableWeightCapacity,
+                          segment.totalWeightCapacity,
+                          "bg-blue-500",
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="mb-1 flex justify-between gap-2">
+                          <span>Available volume</span>
+                          <span>
+                            {segment.availableVolumeCapacity} /{" "}
+                            {segment.totalVolumeCapacity} m³
+                          </span>
+                        </div>
+
+                        {renderCapacityBar(
+                          segment.availableVolumeCapacity,
+                          segment.totalVolumeCapacity,
+                          "bg-teal-500",
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">
+                Segment capacities are unavailable or do not match the route.
+              </p>
+            )}
+          </section>
+
+          <section className="flex flex-wrap gap-3 border-t border-gray-200 pt-6">
+            {container.status === "available" && (
               <button
-                onClick={() => navigate(`/provider/containers/${id}/location`)}
-                className="w-full mt-5 bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700"
-              >
-                Start Live Tracking
-              </button>
-
-              {/* Deliver */}
-              <button
-                onClick={handleDeliver}
+                onClick={handleDepart}
                 disabled={loading}
-                className="w-full mt-3 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-lg bg-green-600 px-5 py-2 text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {loading ? "Delivering..." : "Deliver Container"}
+                {loading ? "Processing..." : "Depart Container"}
               </button>
-            </>
-          )}
+            )}
 
-          {/* Delivered */}
-          {container.status === "delivered" && (
-            <div className="mt-5 bg-green-100 text-green-700 px-4 py-3 rounded-lg text-center font-medium">
-              Container delivered successfully.
-            </div>
-          )}
+            {container.status === "in-transit" && (
+              <>
+                <button
+                  onClick={() =>
+                    navigate(`/provider/containers/${container._id}/location`)
+                  }
+                  className="rounded-lg bg-blue-600 px-5 py-2 text-white transition hover:bg-blue-700"
+                >
+                  Start Live Tracking
+                </button>
+
+                <button
+                  onClick={handleDeliver}
+                  disabled={loading}
+                  className="rounded-lg bg-purple-600 px-5 py-2 text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loading ? "Processing..." : "Mark as Delivered"}
+                </button>
+              </>
+            )}
+
+            {container.status === "full" && (
+              <>
+                <p className="w-full text-sm text-yellow-700">
+                  This container is full. It can still depart according to the
+                  backend's current status rules.
+                </p>
+
+                <button
+                  onClick={handleDepart}
+                  disabled={loading}
+                  className="rounded-lg bg-green-600 px-5 py-2 text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loading ? "Processing..." : "Depart Container"}
+                </button>
+              </>
+            )}
+
+            {container.status === "delivered" && (
+              <p className="text-sm text-green-700">
+                This container has been delivered.
+              </p>
+            )}
+          </section>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

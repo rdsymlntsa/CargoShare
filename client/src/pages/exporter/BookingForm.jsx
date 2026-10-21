@@ -25,6 +25,8 @@ const BookingForm = () => {
     (state) => state.bookings,
   );
 
+  const [pickup, setPickup] = useState("");
+  const [dropoff, setDropoff] = useState("");
   const [requestedWeight, setRequestedWeight] = useState("");
   const [requestedVolume, setRequestedVolume] = useState("");
   const [formError, setFormError] = useState("");
@@ -38,38 +40,100 @@ const BookingForm = () => {
     };
   }, [dispatch, id]);
 
+  const routeStops = currentContainer
+    ? [
+        currentContainer.origin,
+        ...(currentContainer.intermediateStops || []).map((stop) =>
+          typeof stop === "string" ? stop : stop?.name,
+        ),
+        currentContainer.destination,
+      ].filter(Boolean)
+    : [];
+
+  const pickupIndex = routeStops.findIndex(
+    (stop) => stop.toLowerCase() === pickup.trim().toLowerCase(),
+  );
+
+  const dropoffIndex = routeStops.findIndex(
+    (stop) => stop.toLowerCase() === dropoff.trim().toLowerCase(),
+  );
+
+  const coveredSegments =
+    pickupIndex !== -1 && dropoffIndex !== -1 && pickupIndex < dropoffIndex
+      ? dropoffIndex - pickupIndex
+      : 0;
+
+  const selectedSegments =
+    currentContainer?.segments?.slice(pickupIndex, dropoffIndex) || [];
+
+  const routeHasSegmentData =
+    currentContainer?.segments?.length === routeStops.length - 1 &&
+    selectedSegments.length === coveredSegments &&
+    selectedSegments.length > 0;
+
+  const availableWeight = routeHasSegmentData
+    ? Math.min(
+        ...selectedSegments.map((segment) => segment.availableWeightCapacity),
+      )
+    : 0;
+
+  const availableVolume = routeHasSegmentData
+    ? Math.min(
+        ...selectedSegments.map((segment) => segment.availableVolumeCapacity),
+      )
+    : 0;
+
+  useEffect(() => {
+    setPickup("");
+    setDropoff("");
+    setRequestedWeight("");
+    setRequestedVolume("");
+    setFormError("");
+  }, [id]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     setFormError("");
 
     if (!currentContainer) {
       return;
     }
 
-    const weight = Number(requestedWeight);
-    const volume = Number(requestedVolume);
-
-    if (!requestedWeight || weight <= 0) {
-      setFormError("Please enter a valid requested weight.");
+    if (!pickup || !dropoff || pickupIndex >= dropoffIndex) {
+      setFormError("Please select a valid pickup and drop-off route.");
       return;
     }
 
-    if (requestedVolume === "" || volume < 0) {
-      setFormError("Please enter a valid requested volume.");
-      return;
-    }
-
-    if (weight > currentContainer.availableWeightCapacity) {
+    if (!routeHasSegmentData) {
       setFormError(
-        `Requested weight exceeds available capacity of ${currentContainer.availableWeightCapacity} kg.`,
+        "Segment capacity information is unavailable for this container. Please try a newly created container.",
       );
       return;
     }
 
-    if (volume > currentContainer.availableVolumeCapacity) {
+    const weight = Number(requestedWeight);
+    const volume = Number(requestedVolume);
+
+    if (requestedWeight === "" || !Number.isFinite(weight) || weight <= 0) {
+      setFormError("Please enter a valid requested weight.");
+      return;
+    }
+
+    if (requestedVolume === "" || !Number.isFinite(volume) || volume < 0) {
+      setFormError("Please enter a valid requested volume.");
+      return;
+    }
+
+    if (weight > availableWeight) {
       setFormError(
-        `Requested volume exceeds available capacity of ${currentContainer.availableVolumeCapacity}.`,
+        `Requested weight exceeds the available capacity of ${availableWeight} kg on this route.`,
+      );
+      return;
+    }
+
+    if (volume > availableVolume) {
+      setFormError(
+        `Requested volume exceeds the available capacity of ${availableVolume} on this route.`,
       );
       return;
     }
@@ -77,6 +141,8 @@ const BookingForm = () => {
     const result = await dispatch(
       createBooking({
         containerId: id,
+        pickup,
+        dropoff,
         requestedWeight: weight,
         requestedVolume: volume,
       }),
@@ -145,23 +211,13 @@ const BookingForm = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <p>
-                <span className="font-medium">Route:</span>{" "}
-                {currentContainer.origin} → {currentContainer.destination}
+                <span className="font-medium">Full Route:</span>{" "}
+                {routeStops.join(" → ")}
               </p>
 
               <p>
                 <span className="font-medium">Price:</span> ₹
                 {currentContainer.pricePerKg} / kg
-              </p>
-
-              <p>
-                <span className="font-medium">Available Weight:</span>{" "}
-                {currentContainer.availableWeightCapacity} kg
-              </p>
-
-              <p>
-                <span className="font-medium">Available Volume:</span>{" "}
-                {currentContainer.availableVolumeCapacity}
               </p>
 
               <p>
@@ -185,6 +241,76 @@ const BookingForm = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
+              <label className="block font-medium mb-2">Pickup Location</label>
+
+              <select
+                value={pickup}
+                onChange={(e) => {
+                  setPickup(e.target.value);
+                  setDropoff("");
+                  setFormError("");
+                }}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                disabled={bookingLoading}
+                required
+              >
+                <option value="">Select pickup location</option>
+
+                {routeStops.slice(0, -1).map((stop, index) => (
+                  <option key={`${stop}-${index}`} value={stop}>
+                    {stop}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-medium mb-2">
+                Drop-off Location
+              </label>
+
+              <select
+                value={dropoff}
+                onChange={(e) => {
+                  setDropoff(e.target.value);
+                  setFormError("");
+                }}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                disabled={bookingLoading || !pickup}
+                required
+              >
+                <option value="">Select drop-off location</option>
+
+                {routeStops.slice(pickupIndex + 1).map((stop, index) => (
+                  <option key={`${stop}-${index}`} value={stop}>
+                    {stop}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {pickup && dropoff && pickupIndex < dropoffIndex && (
+              <div className="bg-teal-50 border border-teal-100 rounded-lg p-4">
+                <p className="font-medium text-teal-800">Selected Route</p>
+
+                <p className="text-sm text-teal-700 mt-1">
+                  {routeStops.slice(pickupIndex, dropoffIndex + 1).join(" → ")}
+                </p>
+
+                {routeHasSegmentData ? (
+                  <div className="mt-3 text-sm text-gray-700 space-y-1">
+                    <p>Available weight: {availableWeight} kg</p>
+                    <p>Available volume: {availableVolume}</p>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-red-600">
+                    Segment capacity information is unavailable.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div>
               <label className="block font-medium mb-2">
                 Requested Weight (kg)
               </label>
@@ -198,6 +324,7 @@ const BookingForm = () => {
                 placeholder="Enter required weight"
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 disabled={bookingLoading}
+                required
               />
             </div>
 
@@ -213,6 +340,7 @@ const BookingForm = () => {
                 placeholder="Enter required volume"
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 disabled={bookingLoading}
+                required
               />
             </div>
 

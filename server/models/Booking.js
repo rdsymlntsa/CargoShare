@@ -14,6 +14,16 @@ const bookingSchema = new mongoose.Schema(
       required: true,
     },
 
+    pickup: {
+      type: String,
+      trim: true,
+    },
+
+    dropoff: {
+      type: String,
+      trim: true,
+    },
+
     requestedWeight: {
       type: Number,
       required: true,

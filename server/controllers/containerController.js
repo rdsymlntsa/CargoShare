@@ -7,6 +7,7 @@ export const createContainer = async (req, res) => {
       containerNumber,
       origin,
       destination,
+      intermediateStops = [],
       departureDate,
       arrivalDate,
       totalWeightCapacity,
@@ -16,11 +17,13 @@ export const createContainer = async (req, res) => {
       pricePerKg,
     } = req.body;
 
-    // Check required fields
     if (
-      !containerNumber ||
-      !origin ||
-      !destination ||
+      typeof containerNumber !== "string" ||
+      !containerNumber.trim() ||
+      typeof origin !== "string" ||
+      !origin.trim() ||
+      typeof destination !== "string" ||
+      !destination.trim() ||
       !departureDate ||
       !arrivalDate ||
       totalWeightCapacity === undefined ||
@@ -34,14 +37,126 @@ export const createContainer = async (req, res) => {
       });
     }
 
-    // Convert values to numbers
+    if (!Array.isArray(intermediateStops)) {
+      return res.status(400).json({
+        message: "Intermediate stops must be an array",
+      });
+    }
+
+    const departure = new Date(departureDate);
+    const arrival = new Date(arrivalDate);
+
+    if (Number.isNaN(departure.getTime()) || Number.isNaN(arrival.getTime())) {
+      return res.status(400).json({
+        message: "Invalid departure or arrival date",
+      });
+    }
+
+    if (arrival <= departure) {
+      return res.status(400).json({
+        message: "Arrival must be after departure",
+      });
+    }
+
+    const parseOptionalDate = (value, fieldName) => {
+      if (value === undefined || value === null || value === "") {
+        return null;
+      }
+
+      const date = new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        throw new Error(`Invalid ${fieldName}`);
+      }
+
+      if (date < departure || date > arrival) {
+        throw new Error(`${fieldName} must fall within the journey schedule`);
+      }
+
+      return date;
+    };
+
+    const normalizedStops = [];
+    let previousScheduledTime = departure;
+
+    for (const stop of intermediateStops) {
+      const stopName = typeof stop === "string" ? stop : stop?.name;
+
+      if (typeof stopName !== "string" || !stopName.trim()) {
+        return res.status(400).json({
+          message: "Every intermediate stop must have a valid name",
+        });
+      }
+
+      const expectedArrival = parseOptionalDate(
+        typeof stop === "object" && stop !== null ? stop.expectedArrival : null,
+        `Expected arrival time for ${stopName}`,
+      );
+
+      const expectedDeparture = parseOptionalDate(
+        typeof stop === "object" && stop !== null
+          ? stop.expectedDeparture
+          : null,
+        `Expected departure time for ${stopName}`,
+      );
+
+      if (
+        expectedArrival &&
+        expectedDeparture &&
+        expectedDeparture < expectedArrival
+      ) {
+        return res.status(400).json({
+          message: `Departure at ${stopName} cannot be before arrival`,
+        });
+      }
+
+      if (expectedArrival && expectedArrival < previousScheduledTime) {
+        return res.status(400).json({
+          message: `Schedule at ${stopName} must follow the previous stop`,
+        });
+      }
+
+      if (expectedArrival) {
+        previousScheduledTime = expectedArrival;
+      }
+
+      if (expectedDeparture && expectedDeparture < previousScheduledTime) {
+        return res.status(400).json({
+          message: `Schedule at ${stopName} must follow the previous stop`,
+        });
+      }
+
+      if (expectedDeparture) {
+        previousScheduledTime = expectedDeparture;
+      }
+
+      normalizedStops.push({
+        name: stopName.trim(),
+        expectedArrival,
+        expectedDeparture,
+      });
+    }
+
+    const route = [
+      origin.trim(),
+      ...normalizedStops.map((stop) => stop.name),
+      destination.trim(),
+    ];
+
+    const normalizedRoute = route.map((stop) => stop.toLowerCase());
+
+    if (new Set(normalizedRoute).size !== normalizedRoute.length) {
+      return res.status(400).json({
+        message: "A location cannot appear more than once in the route",
+      });
+    }
+
     const totalWeight = Number(totalWeightCapacity);
     const availableWeight = Number(availableWeightCapacity);
     const totalVolume = Number(totalVolumeCapacity);
     const availableVolume = Number(availableVolumeCapacity);
     const price = Number(pricePerKg);
 
-    // Validate numeric values
     if (
       !Number.isFinite(totalWeight) ||
       !Number.isFinite(availableWeight) ||
@@ -54,58 +169,36 @@ export const createContainer = async (req, res) => {
       });
     }
 
-    // Validate weight capacity
-    if (totalWeight <= 0 || availableWeight <= 0) {
+    if (
+      totalWeight <= 0 ||
+      availableWeight <= 0 ||
+      availableWeight > totalWeight
+    ) {
       return res.status(400).json({
-        message: "Weight capacity must be greater than 0",
+        message: "Invalid weight capacity values",
       });
     }
 
-    if (availableWeight > totalWeight) {
+    if (
+      totalVolume <= 0 ||
+      availableVolume <= 0 ||
+      availableVolume > totalVolume
+    ) {
       return res.status(400).json({
-        message: "Available weight capacity cannot exceed total capacity",
+        message: "Invalid volume capacity values",
       });
     }
 
-    // Validate volume capacity
-    if (totalVolume <= 0 || availableVolume <= 0) {
-      return res.status(400).json({
-        message: "Volume capacity must be greater than 0",
-      });
-    }
-
-    if (availableVolume > totalVolume) {
-      return res.status(400).json({
-        message: "Available volume capacity cannot exceed total capacity",
-      });
-    }
-
-    // Validate price
     if (price <= 0) {
       return res.status(400).json({
         message: "Price per kg must be greater than 0",
       });
     }
 
-    // Validate dates
-    const departure = new Date(departureDate);
-    const arrival = new Date(arrivalDate);
+    const normalizedContainerNumber = containerNumber.trim();
 
-    if (Number.isNaN(departure.getTime()) || Number.isNaN(arrival.getTime())) {
-      return res.status(400).json({
-        message: "Invalid departure or arrival date",
-      });
-    }
-
-    if (arrival <= departure) {
-      return res.status(400).json({
-        message: "Arrival date must be after departure date",
-      });
-    }
-
-    // Check for duplicate container number
     const existingContainer = await Container.findOne({
-      containerNumber,
+      containerNumber: normalizedContainerNumber,
     });
 
     if (existingContainer) {
@@ -114,12 +207,26 @@ export const createContainer = async (req, res) => {
       });
     }
 
-    // Create container
+    const segments = [];
+
+    for (let i = 0; i < route.length - 1; i++) {
+      segments.push({
+        from: route[i],
+        to: route[i + 1],
+        totalWeightCapacity: totalWeight,
+        availableWeightCapacity: availableWeight,
+        totalVolumeCapacity: totalVolume,
+        availableVolumeCapacity: availableVolume,
+      });
+    }
+
     const container = await Container.create({
       provider: req.user._id,
-      containerNumber,
-      origin,
-      destination,
+      containerNumber: normalizedContainerNumber,
+      origin: route[0],
+      destination: route[route.length - 1],
+      intermediateStops: normalizedStops,
+      segments,
       departureDate: departure,
       arrivalDate: arrival,
       totalWeightCapacity: totalWeight,
@@ -134,10 +241,27 @@ export const createContainer = async (req, res) => {
       container,
     });
   } catch (error) {
-    // Safety net for MongoDB unique index
     if (error.code === 11000) {
       return res.status(400).json({
         message: "Container number already exists",
+      });
+    }
+
+    if (error.message?.startsWith("Invalid ")) {
+      return res.status(400).json({
+        message: error.message,
+      });
+    }
+
+    if (error.message?.includes("must fall within")) {
+      return res.status(400).json({
+        message: error.message,
+      });
+    }
+
+    if (error.message?.includes("Schedule at")) {
+      return res.status(400).json({
+        message: error.message,
       });
     }
 
@@ -159,23 +283,25 @@ export const getContainers = async (req, res) => {
       maxPrice,
     } = req.query;
 
+    const weight = minWeight === undefined ? 0 : Number(minWeight);
+    const volume = minVolume === undefined ? 0 : Number(minVolume);
+    const price = maxPrice === undefined ? Infinity : Number(maxPrice);
+
+    if (
+      !Number.isFinite(weight) ||
+      weight < 0 ||
+      !Number.isFinite(volume) ||
+      volume < 0 ||
+      (maxPrice !== undefined && (!Number.isFinite(price) || price < 0))
+    ) {
+      return res.status(400).json({
+        message: "Invalid capacity or price filters",
+      });
+    }
+
     const filter = {
-      status: "available",
+      status: { $in: ["available", "full"] },
     };
-
-    if (origin) {
-      filter.origin = {
-        $regex: origin,
-        $options: "i",
-      };
-    }
-
-    if (destination) {
-      filter.destination = {
-        $regex: destination,
-        $options: "i",
-      };
-    }
 
     if (departureDate) {
       const startDate = new Date(departureDate);
@@ -195,58 +321,95 @@ export const getContainers = async (req, res) => {
       };
     }
 
-    if (minWeight !== undefined) {
-      const weight = Number(minWeight);
-
-      if (!Number.isFinite(weight) || weight < 0) {
-        return res.status(400).json({
-          message: "Minimum weight must be a valid positive number",
-        });
-      }
-
-      filter.availableWeightCapacity = {
-        $gte: weight,
-      };
-    }
-
-    if (minVolume !== undefined) {
-      const volume = Number(minVolume);
-
-      if (!Number.isFinite(volume) || volume < 0) {
-        return res.status(400).json({
-          message: "Minimum volume must be a valid positive number",
-        });
-      }
-
-      filter.availableVolumeCapacity = {
-        $gte: volume,
-      };
-    }
-
     if (maxPrice !== undefined) {
-      const price = Number(maxPrice);
-
-      if (!Number.isFinite(price) || price < 0) {
-        return res.status(400).json({
-          message: "Maximum price must be a valid positive number",
-        });
-      }
-
-      filter.pricePerKg = {
-        $lte: price,
-      };
+      filter.pricePerKg = { $lte: price };
     }
 
     const containers = await Container.find(filter)
       .populate("provider", "name email phone")
       .sort({ departureDate: 1 });
 
-    res.status(200).json({
-      count: containers.length,
-      containers,
+    const normalize = (value) =>
+      String(value ?? "")
+        .trim()
+        .toLowerCase();
+
+    const results = containers
+      .map((container) => {
+        const stops = (container.intermediateStops || []).map((stop) =>
+          typeof stop === "string" ? stop : stop?.name,
+        );
+
+        const route = [container.origin, ...stops, container.destination];
+
+        let segments = container.segments || [];
+
+        // Reconstruct segments for legacy containers without valid segment counts.
+        if (segments.length !== route.length - 1) {
+          segments = Array.from({ length: route.length - 1 }, (_, index) => ({
+            from: route[index],
+            to: route[index + 1],
+            totalWeightCapacity: container.totalWeightCapacity,
+            availableWeightCapacity: container.availableWeightCapacity,
+            totalVolumeCapacity: container.totalVolumeCapacity,
+            availableVolumeCapacity: container.availableVolumeCapacity,
+          }));
+        }
+
+        const possibleRoutes = [];
+
+        for (let i = 0; i < route.length - 1; i++) {
+          if (origin && normalize(route[i]) !== normalize(origin)) {
+            continue;
+          }
+
+          for (let j = i + 1; j < route.length; j++) {
+            if (destination && normalize(route[j]) !== normalize(destination)) {
+              continue;
+            }
+
+            const coveredSegments = segments.slice(i, j);
+
+            if (coveredSegments.length !== j - i) {
+              continue;
+            }
+
+            const hasCapacity = coveredSegments.every(
+              (segment) =>
+                Number(segment.availableWeightCapacity) >= weight &&
+                Number(segment.availableVolumeCapacity) >= volume,
+            );
+
+            if (hasCapacity) {
+              possibleRoutes.push({
+                pickup: route[i],
+                dropoff: route[j],
+                startIndex: i,
+                endIndex: j,
+              });
+            }
+          }
+        }
+
+        // Exclude containers that don't match the requested route or capacity.
+        if (possibleRoutes.length === 0) {
+          return null;
+        }
+
+        // Return one result per container, with all valid route options.
+        return {
+          ...container.toObject(),
+          matchingRoutes: possibleRoutes,
+        };
+      })
+      .filter(Boolean);
+
+    return res.status(200).json({
+      count: results.length,
+      containers: results,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server error",
       error: error.message,
     });

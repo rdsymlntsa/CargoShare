@@ -1,21 +1,117 @@
 import Booking from "../models/Booking.js";
 import Container from "../models/Container.js";
 
+const getRouteStops = (container) => {
+  const intermediateStops = (container.intermediateStops || []).map((stop) =>
+    typeof stop === "string" ? stop : stop?.name,
+  );
+
+  return [container.origin, ...intermediateStops, container.destination];
+};
+
+const getCoveredSegmentIndexes = (container, pickup, dropoff) => {
+  const route = getRouteStops(container);
+
+  const normalize = (value) =>
+    typeof value === "string" ? value.trim().toLowerCase() : "";
+
+  const pickupIndex = route.findIndex(
+    (stop) => normalize(stop) === normalize(pickup),
+  );
+
+  const dropoffIndex = route.findIndex(
+    (stop) => normalize(stop) === normalize(dropoff),
+  );
+
+  if (
+    pickupIndex === -1 ||
+    dropoffIndex === -1 ||
+    pickupIndex >= dropoffIndex
+  ) {
+    return null;
+  }
+
+  const segments = container.segments || [];
+
+  if (segments.length !== route.length - 1) {
+    return null;
+  }
+
+  const indexes = [];
+
+  for (let i = pickupIndex; i < dropoffIndex; i++) {
+    const segment = segments[i];
+
+    if (
+      !segment ||
+      normalize(segment.from) !== normalize(route[i]) ||
+      normalize(segment.to) !== normalize(route[i + 1])
+    ) {
+      return null;
+    }
+
+    indexes.push(i);
+  }
+
+  return indexes;
+};
+
+const hasEnoughSegmentCapacity = (
+  container,
+  indexes,
+  requestedWeight,
+  requestedVolume,
+) => {
+  return indexes.every((index) => {
+    const segment = container.segments[index];
+
+    return (
+      segment.availableWeightCapacity >= requestedWeight &&
+      segment.availableVolumeCapacity >= requestedVolume
+    );
+  });
+};
+
+const updateContainerAvailabilityStatus = (container) => {
+  const segments = container.segments || [];
+
+  const hasAvailableCapacity = segments.some(
+    (segment) =>
+      segment.availableWeightCapacity > 0 &&
+      segment.availableVolumeCapacity >= 0,
+  );
+
+  container.status = hasAvailableCapacity ? "available" : "full";
+};
+
 export const createBooking = async (req, res) => {
   try {
-    const { containerId, requestedWeight, requestedVolume } = req.body;
+    const { containerId, pickup, dropoff, requestedWeight, requestedVolume } =
+      req.body;
 
     if (
       !containerId ||
+      typeof pickup !== "string" ||
+      !pickup.trim() ||
+      typeof dropoff !== "string" ||
+      !dropoff.trim() ||
       requestedWeight === undefined ||
       requestedVolume === undefined
     ) {
       return res.status(400).json({
-        message: "Required fields are missing",
+        message: "Container, pickup, dropoff, weight and volume are required",
       });
     }
 
-    if (requestedWeight <= 0 || requestedVolume < 0) {
+    const weight = Number(requestedWeight);
+    const volume = Number(requestedVolume);
+
+    if (
+      !Number.isFinite(weight) ||
+      !Number.isFinite(volume) ||
+      weight <= 0 ||
+      volume < 0
+    ) {
       return res.status(400).json({
         message: "Invalid requested capacity",
       });
@@ -29,37 +125,41 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    if (container.status !== "available") {
+    if (!["available", "full"].includes(container.status)) {
       return res.status(400).json({
         message: "Container is not available for booking",
       });
     }
 
-    if (requestedWeight > container.availableWeightCapacity) {
+    const indexes = getCoveredSegmentIndexes(container, pickup, dropoff);
+
+    if (!indexes) {
       return res.status(400).json({
-        message: "Requested weight exceeds available capacity",
+        message: "Invalid route or segment capacity data",
       });
     }
 
-    if (requestedVolume > container.availableVolumeCapacity) {
+    if (!hasEnoughSegmentCapacity(container, indexes, weight, volume)) {
       return res.status(400).json({
-        message: "Requested volume exceeds available capacity",
+        message: "Insufficient capacity on one or more route segments",
       });
     }
 
     const booking = await Booking.create({
       exporter: req.user._id,
-      container: containerId,
-      requestedWeight,
-      requestedVolume,
+      container: container._id,
+      pickup: pickup.trim(),
+      dropoff: dropoff.trim(),
+      requestedWeight: weight,
+      requestedVolume: volume,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Booking request created successfully",
       booking,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server error",
       error: error.message,
     });
@@ -74,12 +174,12 @@ export const getMyBookings = async (req, res) => {
       .populate("container")
       .sort({ createdAt: -1 });
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Bookings fetched successfully",
       bookings,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server error",
       error: error.message,
     });
@@ -118,12 +218,12 @@ export const getBookingById = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Booking fetched successfully",
       booking,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server error",
       error: error.message,
     });
@@ -160,39 +260,58 @@ export const approveBooking = async (req, res) => {
       });
     }
 
-    if (booking.requestedWeight > container.availableWeightCapacity) {
+    if (!["available", "full"].includes(container.status)) {
       return res.status(400).json({
-        message: "Insufficient weight capacity",
+        message: "Container is not available for booking",
       });
     }
 
-    if (booking.requestedVolume > container.availableVolumeCapacity) {
+    const indexes = getCoveredSegmentIndexes(
+      container,
+      booking.pickup,
+      booking.dropoff,
+    );
+
+    if (!indexes) {
       return res.status(400).json({
-        message: "Insufficient volume capacity",
+        message: "Invalid route or segment capacity data",
       });
     }
-
-    container.availableWeightCapacity -= booking.requestedWeight;
-    container.availableVolumeCapacity -= booking.requestedVolume;
 
     if (
-      container.availableWeightCapacity === 0 ||
-      container.availableVolumeCapacity === 0
+      !hasEnoughSegmentCapacity(
+        container,
+        indexes,
+        booking.requestedWeight,
+        booking.requestedVolume,
+      )
     ) {
-      container.status = "full";
+      return res.status(400).json({
+        message: "Insufficient capacity on one or more route segments",
+      });
     }
+
+    for (const index of indexes) {
+      container.segments[index].availableWeightCapacity -=
+        booking.requestedWeight;
+
+      container.segments[index].availableVolumeCapacity -=
+        booking.requestedVolume;
+    }
+
+    updateContainerAvailabilityStatus(container);
 
     booking.status = "approved";
 
     await container.save();
     await booking.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Booking approved successfully",
       booking,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server error",
       error: error.message,
     });
@@ -215,12 +334,12 @@ export const getProviderBookings = async (req, res) => {
       .populate("container")
       .sort({ createdAt: -1 });
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Booking requests fetched successfully",
       bookings,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server error",
       error: error.message,
     });
@@ -261,12 +380,12 @@ export const rejectBooking = async (req, res) => {
 
     await booking.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Booking rejected successfully",
       booking,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server error",
       error: error.message,
     });
@@ -286,7 +405,7 @@ export const cancelBooking = async (req, res) => {
       });
     }
 
-    if (booking.status !== "pending" && booking.status !== "approved") {
+    if (!["pending", "approved"].includes(booking.status)) {
       return res.status(400).json({
         message: "This booking cannot be cancelled",
       });
@@ -302,7 +421,7 @@ export const cancelBooking = async (req, res) => {
 
     if (
       booking.status === "approved" &&
-      (container.status === "in-transit" || container.status === "delivered")
+      ["in-transit", "delivered"].includes(container.status)
     ) {
       return res.status(400).json({
         message: "Approved booking cannot be cancelled after departure",
@@ -310,12 +429,33 @@ export const cancelBooking = async (req, res) => {
     }
 
     if (booking.status === "approved") {
-      container.availableWeightCapacity += booking.requestedWeight;
-      container.availableVolumeCapacity += booking.requestedVolume;
+      const indexes = getCoveredSegmentIndexes(
+        container,
+        booking.pickup,
+        booking.dropoff,
+      );
 
-      if (container.status === "full") {
-        container.status = "available";
+      if (!indexes) {
+        return res.status(400).json({
+          message: "Cannot restore capacity: invalid route or segment data",
+        });
       }
+
+      for (const index of indexes) {
+        const segment = container.segments[index];
+
+        segment.availableWeightCapacity = Math.min(
+          segment.availableWeightCapacity + booking.requestedWeight,
+          segment.totalWeightCapacity,
+        );
+
+        segment.availableVolumeCapacity = Math.min(
+          segment.availableVolumeCapacity + booking.requestedVolume,
+          segment.totalVolumeCapacity,
+        );
+      }
+
+      updateContainerAvailabilityStatus(container);
 
       await container.save();
     }
@@ -324,12 +464,12 @@ export const cancelBooking = async (req, res) => {
 
     await booking.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Booking cancelled successfully",
       booking,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server error",
       error: error.message,
     });
@@ -352,12 +492,12 @@ export const getProviderBookingHistory = async (req, res) => {
       .populate("container")
       .sort({ createdAt: -1 });
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Booking history fetched successfully",
       bookings,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server error",
       error: error.message,
     });

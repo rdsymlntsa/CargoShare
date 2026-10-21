@@ -27,6 +27,19 @@ const Tracking = () => {
       booking.container?.status === "in-transit",
   );
 
+  const getStopName = (stop) =>
+    typeof stop === "string" ? stop : stop?.name || "N/A";
+
+  const getFullRoute = (container) => {
+    if (!container) return "N/A";
+
+    const stops = (container.intermediateStops || []).map(getStopName);
+
+    return [container.origin, ...stops, container.destination]
+      .filter(Boolean)
+      .join(" → ");
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <nav className="bg-teal-600 text-white px-6 py-4 flex justify-between items-center">
@@ -97,8 +110,7 @@ const Tracking = () => {
                       </h3>
 
                       <p className="text-gray-600 mt-1">
-                        {container?.origin || "N/A"} →{" "}
-                        {container?.destination || "N/A"}
+                        {getFullRoute(container)}
                       </p>
                     </div>
 
@@ -109,18 +121,18 @@ const Tracking = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
                     <div>
-                      <p className="text-sm text-gray-500">Booked Weight</p>
+                      <p className="text-sm text-gray-500">Your Pickup</p>
 
                       <p className="font-semibold text-gray-800">
-                        {booking.requestedWeight} kg
+                        {booking.pickup || "N/A"}
                       </p>
                     </div>
 
                     <div>
-                      <p className="text-sm text-gray-500">Booked Volume</p>
+                      <p className="text-sm text-gray-500">Your Drop-off</p>
 
                       <p className="font-semibold text-gray-800">
-                        {booking.requestedVolume}
+                        {booking.dropoff || "N/A"}
                       </p>
                     </div>
 
@@ -129,9 +141,7 @@ const Tracking = () => {
 
                       <p className="font-semibold text-gray-800">
                         {container?.departureDate
-                          ? new Date(
-                              container.departureDate,
-                            ).toLocaleDateString()
+                          ? new Date(container.departureDate).toLocaleString()
                           : "N/A"}
                       </p>
                     </div>

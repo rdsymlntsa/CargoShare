@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -21,6 +22,16 @@ import {
   clearCurrentContainer,
 } from "../../features/containers/containerSlice.js";
 
+const MapUpdater = ({ latitude, longitude }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView([latitude, longitude], map.getZoom());
+  }, [map, latitude, longitude]);
+
+  return null;
+};
+
 const ShipmentTracking = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -30,18 +41,13 @@ const ShipmentTracking = () => {
     (state) => state.containers,
   );
 
-  const MapUpdater = ({ latitude, longitude }) => {
-    const map = useMap();
-
-    useEffect(() => {
-      map.setView([latitude, longitude], map.getZoom());
-    }, [map, latitude, longitude]);
-
-    return null;
-  };
-
   useEffect(() => {
     dispatch(getContainerLocation(id));
+
+    return () => {
+      dispatch(clearCurrentContainer());
+      dispatch(clearContainerError());
+    };
   }, [dispatch, id]);
 
   useEffect(() => {
@@ -53,17 +59,16 @@ const ShipmentTracking = () => {
       dispatch(getContainerLocation(id));
     }, 15000);
 
-    return () => {
-      clearInterval(intervalId);
-    };
+    return () => clearInterval(intervalId);
   }, [dispatch, id, currentContainer?.status]);
 
-  useEffect(() => {
-    return () => {
-      dispatch(clearCurrentContainer());
-      dispatch(clearContainerError());
-    };
-  }, [dispatch]);
+  if (loading && !currentContainer) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <p className="text-gray-600">Loading shipment location...</p>
+      </div>
+    );
+  }
 
   if (error && !currentContainer) {
     return (
@@ -94,6 +99,25 @@ const ShipmentTracking = () => {
 
   const location = currentContainer.currentLocation;
 
+  const hasValidLocation =
+    location &&
+    Number.isFinite(Number(location.latitude)) &&
+    Number.isFinite(Number(location.longitude)) &&
+    location.latitude !== "" &&
+    location.longitude !== "";
+
+  const intermediateStops = Array.isArray(currentContainer.intermediateStops)
+    ? currentContainer.intermediateStops
+    : [];
+
+  const route = [
+    currentContainer.origin,
+    ...intermediateStops.map((stop) =>
+      typeof stop === "string" ? stop : stop?.name,
+    ),
+    currentContainer.destination,
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-gray-100">
       <nav className="bg-teal-600 text-white px-6 py-4 flex justify-between items-center">
@@ -123,7 +147,7 @@ const ShipmentTracking = () => {
               </h2>
 
               <p className="text-gray-600 mt-1">
-                {currentContainer.containerNumber}
+                {currentContainer.containerNumber || "N/A"}
               </p>
             </div>
 
@@ -133,14 +157,20 @@ const ShipmentTracking = () => {
           </div>
 
           <div className="mt-6 bg-gray-50 rounded-lg p-5">
-            <p className="text-sm text-gray-500">Route</p>
+            <p className="text-sm text-gray-500">Full Route</p>
 
-            <p className="font-medium text-gray-800 mt-1">
-              {currentContainer.origin} → {currentContainer.destination}
+            <p className="font-medium text-gray-800 mt-1 leading-7">
+              {route.length ? route.join(" → ") : "Route unavailable"}
             </p>
           </div>
 
-          {location ? (
+          {error && (
+            <div className="mt-4 bg-red-100 text-red-700 px-4 py-3 rounded-lg">
+              Could not refresh the latest location: {error}
+            </div>
+          )}
+
+          {hasValidLocation ? (
             <div className="mt-5">
               <h3 className="font-semibold text-gray-800 mb-3">
                 Current Location
@@ -148,7 +178,10 @@ const ShipmentTracking = () => {
 
               <div className="rounded-lg overflow-hidden border border-gray-200">
                 <MapContainer
-                  center={[location.latitude, location.longitude]}
+                  center={[
+                    Number(location.latitude),
+                    Number(location.longitude),
+                  ]}
                   zoom={13}
                   scrollWheelZoom={true}
                   className="h-96 w-full"
@@ -159,11 +192,16 @@ const ShipmentTracking = () => {
                   />
 
                   <MapUpdater
-                    latitude={location.latitude}
-                    longitude={location.longitude}
+                    latitude={Number(location.latitude)}
+                    longitude={Number(location.longitude)}
                   />
 
-                  <Marker position={[location.latitude, location.longitude]}>
+                  <Marker
+                    position={[
+                      Number(location.latitude),
+                      Number(location.longitude),
+                    ]}
+                  >
                     <Popup>
                       <strong>{currentContainer.containerNumber}</strong>
                       <br />
@@ -173,22 +211,29 @@ const ShipmentTracking = () => {
                 </MapContainer>
               </div>
 
-              <div className="mt-3 text-sm text-gray-500">
+              <div className="mt-3 text-sm text-gray-500 space-y-1">
                 <p>Latitude: {location.latitude}</p>
-
                 <p>Longitude: {location.longitude}</p>
 
                 {location.updatedAt && (
-                  <p className="mt-1">
+                  <p>
                     Last updated:{" "}
                     {new Date(location.updatedAt).toLocaleString()}
                   </p>
                 )}
               </div>
+
+              {currentContainer.status === "in-transit" && (
+                <p className="mt-3 text-sm text-gray-500">
+                  Location refreshes automatically every 15 seconds while the
+                  shipment is in transit.
+                </p>
+              )}
             </div>
           ) : (
             <div className="mt-5 bg-yellow-100 text-yellow-700 px-4 py-3 rounded-lg">
-              No GPS location has been recorded yet.
+              No valid GPS location has been recorded yet. The map will appear
+              when the provider updates the container location.
             </div>
           )}
         </div>

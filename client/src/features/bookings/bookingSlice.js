@@ -302,7 +302,7 @@ const bookingSlice = createSlice({
         );
 
         if (index !== -1) {
-          state.bookings[index] = action.payload.booking;
+          state.bookings[index].status = action.payload.booking.status;
         }
 
         state.error = null;

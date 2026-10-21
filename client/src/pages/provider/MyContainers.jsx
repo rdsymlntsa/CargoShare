@@ -1,14 +1,44 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-
 import {
   getMyContainers,
   clearContainerError,
-} from "../../features/containers/containerSlice.js";
+} from "../../features/containers/containerSlice";
+
+const formatDate = (date) => {
+  if (!date) return "Not specified";
+
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const formatDateTime = (date) => {
+  if (!date) return "Not specified";
+
+  return new Date(date).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const getCheckpoints = (container) => [
+  { name: container.origin, type: "Origin" },
+  ...(container.intermediateStops || []).map((stop) => ({
+    name: typeof stop === "string" ? stop : stop.name,
+    type: "Intermediate Stop",
+    expectedArrival: typeof stop === "string" ? null : stop.expectedArrival,
+    expectedDeparture: typeof stop === "string" ? null : stop.expectedDeparture,
+  })),
+  { name: container.destination, type: "Destination" },
+];
 
 const MyContainers = () => {
-  const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const { containers, loading, error } = useSelector(
@@ -23,187 +53,264 @@ const MyContainers = () => {
     };
   }, [dispatch]);
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString();
-  };
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-gray-600">
+        Loading your containers...
+      </div>
+    );
+  }
 
-  const getStatusClass = (status) => {
-    if (status === "available") {
-      return "bg-green-100 text-green-700";
-    }
+  if (error) {
+    return <div className="p-6 text-center text-red-600">{error}</div>;
+  }
 
-    if (status === "full") {
-      return "bg-yellow-100 text-yellow-700";
-    }
-
-    if (status === "in-transit") {
-      return "bg-blue-100 text-blue-700";
-    }
-
-    if (status === "delivered") {
-      return "bg-gray-100 text-gray-700";
-    }
-
-    if (status === "cancelled") {
-      return "bg-red-100 text-red-700";
-    }
-
-    return "bg-gray-100 text-gray-700";
-  };
+  if (!containers || containers.length === 0) {
+    return (
+      <div className="p-6 text-center text-gray-600">
+        You have not created any containers yet.
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-teal-600 text-white px-6 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">CargoShare</h1>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="mx-auto max-w-6xl">
+        <h1 className="mb-6 text-3xl font-bold text-gray-800">My Containers</h1>
 
-        <button
-          onClick={() => navigate("/provider/dashboard")}
-          className="bg-white text-teal-600 px-4 py-2 rounded-lg font-medium"
-        >
-          Dashboard
-        </button>
-      </nav>
+        <div className="space-y-6">
+          {containers.map((container) => {
+            const checkpoints = getCheckpoints(container);
+            const segments = container.segments || [];
+            const expectedSegmentCount = Math.max(checkpoints.length - 1, 0);
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">My Containers</h2>
-
-            <p className="text-gray-600 mt-1">
-              Manage the containers you have listed on CargoShare.
-            </p>
-          </div>
-
-          <button
-            onClick={() => navigate("/provider/containers/create")}
-            className="bg-teal-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-teal-700"
-          >
-            + Create Container
-          </button>
-        </div>
-
-        {loading && (
-          <div className="bg-white rounded-xl shadow-md p-8 text-center">
-            <p className="text-gray-600">Loading containers...</p>
-          </div>
-        )}
-
-        {error && !loading && (
-          <div className="bg-red-100 text-red-700 px-4 py-3 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        {!loading && !error && containers.length === 0 && (
-          <div className="bg-white rounded-xl shadow-md p-8 text-center">
-            <h3 className="text-xl font-semibold text-gray-800">
-              No containers listed
-            </h3>
-
-            <p className="text-gray-600 mt-2 mb-5">
-              You haven't created any containers yet.
-            </p>
-
-            <button
-              onClick={() => navigate("/provider/containers/create")}
-              className="bg-teal-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-teal-700"
-            >
-              Create Your First Container
-            </button>
-          </div>
-        )}
-
-        {!loading && !error && containers.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {containers.map((container) => (
+            return (
               <div
                 key={container._id}
-                className="bg-white rounded-xl shadow-md p-6"
+                className="rounded-xl bg-white p-6 shadow"
               >
-                <div className="flex justify-between items-start gap-4 mb-5">
+                <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-800">
-                      {container.containerNumber}
-                    </h3>
+                    <h2 className="text-xl font-semibold text-gray-800">
+                      Container {container.containerNumber}
+                    </h2>
 
-                    <p className="text-gray-600 mt-1">
+                    <p className="mt-1 text-gray-600">
                       {container.origin} → {container.destination}
                     </p>
                   </div>
 
                   <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusClass(
-                      container.status,
-                    )}`}
+                    className={`rounded-full px-3 py-1 text-sm font-medium ${
+                      container.status === "available"
+                        ? "bg-green-100 text-green-700"
+                        : container.status === "in-transit"
+                          ? "bg-blue-100 text-blue-700"
+                          : container.status === "full"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : container.status === "delivered"
+                              ? "bg-gray-200 text-gray-700"
+                              : "bg-gray-100 text-gray-600"
+                    }`}
                   >
                     {container.status}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500">Departure</p>
-                    <p className="font-medium text-gray-800">
+                <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <p className="text-sm text-gray-500">Departure</p>
+                    <p className="mt-1 font-medium text-gray-800">
                       {formatDate(container.departureDate)}
                     </p>
                   </div>
 
-                  <div>
-                    <p className="text-gray-500">Arrival</p>
-                    <p className="font-medium text-gray-800">
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <p className="text-sm text-gray-500">Arrival</p>
+                    <p className="mt-1 font-medium text-gray-800">
                       {formatDate(container.arrivalDate)}
                     </p>
                   </div>
 
-                  <div>
-                    <p className="text-gray-500">Total Weight</p>
-                    <p className="font-medium text-gray-800">
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <p className="text-sm text-gray-500">
+                      Overall Available Weight
+                    </p>
+                    <p className="mt-1 font-medium text-gray-800">
+                      {container.availableWeightCapacity} /{" "}
                       {container.totalWeightCapacity} kg
                     </p>
                   </div>
 
-                  <div>
-                    <p className="text-gray-500">Available Weight</p>
-                    <p className="font-medium text-gray-800">
-                      {container.availableWeightCapacity} kg
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <p className="text-sm text-gray-500">
+                      Overall Available Volume
                     </p>
-                  </div>
-
-                  <div>
-                    <p className="text-gray-500">Total Volume</p>
-                    <p className="font-medium text-gray-800">
+                    <p className="mt-1 font-medium text-gray-800">
+                      {container.availableVolumeCapacity} /{" "}
                       {container.totalVolumeCapacity} m³
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-gray-500">Available Volume</p>
-                    <p className="font-medium text-gray-800">
-                      {container.availableVolumeCapacity} m³
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-gray-500">Price per kg</p>
-                    <p className="font-medium text-gray-800">
-                      ₹{container.pricePerKg}
                     </p>
                   </div>
                 </div>
 
+                <div className="mb-6">
+                  <h3 className="mb-3 font-semibold text-gray-700">
+                    Route Checkpoints
+                  </h3>
+
+                  <div className="space-y-3">
+                    {checkpoints.map((checkpoint, index) => (
+                      <div
+                        key={`${checkpoint.name}-${index}`}
+                        className="flex gap-3"
+                      >
+                        <div className="flex flex-col items-center">
+                          <div
+                            className={`mt-1 h-3 w-3 rounded-full ${
+                              index === 0
+                                ? "bg-green-500"
+                                : index === checkpoints.length - 1
+                                  ? "bg-red-500"
+                                  : "bg-blue-500"
+                            }`}
+                          />
+
+                          {index < checkpoints.length - 1 && (
+                            <div className="mt-1 min-h-6 w-0.5 flex-1 bg-gray-300" />
+                          )}
+                        </div>
+
+                        <div className="pb-3">
+                          <p className="font-medium text-gray-800">
+                            {checkpoint.name || "Unnamed checkpoint"}
+                          </p>
+
+                          <p className="text-xs text-gray-500">
+                            {checkpoint.type}
+                          </p>
+
+                          {checkpoint.expectedArrival && (
+                            <p className="text-sm text-gray-500">
+                              Expected arrival:{" "}
+                              {formatDateTime(checkpoint.expectedArrival)}
+                            </p>
+                          )}
+
+                          {checkpoint.expectedDeparture && (
+                            <p className="text-sm text-gray-500">
+                              Expected departure:{" "}
+                              {formatDateTime(checkpoint.expectedDeparture)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="mb-3 font-semibold text-gray-700">
+                    Segment Capacities
+                  </h3>
+
+                  {segments.length === expectedSegmentCount &&
+                  segments.length > 0 ? (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {segments.map((segment, index) => (
+                        <div
+                          key={
+                            segment._id ||
+                            `${segment.from}-${segment.to}-${index}`
+                          }
+                          className="rounded-lg border border-gray-200 p-4"
+                        >
+                          <p className="font-semibold text-gray-800">
+                            {segment.from} → {segment.to}
+                          </p>
+
+                          <div className="mt-3 space-y-2 text-sm text-gray-600">
+                            <p>
+                              Weight: {segment.availableWeightCapacity} /{" "}
+                              {segment.totalWeightCapacity} kg available
+                            </p>
+
+                            <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                              <div
+                                className="h-full rounded-full bg-blue-500"
+                                style={{
+                                  width: `${
+                                    segment.totalWeightCapacity > 0
+                                      ? Math.min(
+                                          100,
+                                          Math.max(
+                                            0,
+                                            (segment.availableWeightCapacity /
+                                              segment.totalWeightCapacity) *
+                                              100,
+                                          ),
+                                        )
+                                      : 0
+                                  }%`,
+                                }}
+                              />
+                            </div>
+
+                            <p>
+                              Volume: {segment.availableVolumeCapacity} /{" "}
+                              {segment.totalVolumeCapacity} m³ available
+                            </p>
+
+                            <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                              <div
+                                className="h-full rounded-full bg-teal-500"
+                                style={{
+                                  width: `${
+                                    segment.totalVolumeCapacity > 0
+                                      ? Math.min(
+                                          100,
+                                          Math.max(
+                                            0,
+                                            (segment.availableVolumeCapacity /
+                                              segment.totalVolumeCapacity) *
+                                              100,
+                                          ),
+                                        )
+                                      : 0
+                                  }%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      Segment capacities are unavailable or do not match the
+                      current route checkpoints.
+                    </p>
+                  )}
+                </div>
+
+                <div className="mb-5">
+                  <p className="text-gray-600">
+                    Price per kg: ₹{container.pricePerKg}
+                  </p>
+                </div>
+
                 <button
                   onClick={() =>
-                    navigate(`/provider/containers/${container._id}`)
+                    (window.location.href = `/provider/containers/${container._id}`)
                   }
-                  className="w-full mt-6 border border-teal-600 text-teal-600 py-3 rounded-lg font-medium hover:bg-teal-50"
+                  className="rounded-lg bg-blue-600 px-5 py-2 text-white transition hover:bg-blue-700"
                 >
-                  View Details
+                  View Container Details
                 </button>
               </div>
-            ))}
-          </div>
-        )}
-      </main>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
