@@ -12,11 +12,52 @@ const ExporterDashboard = () => {
     navigate("/login");
   };
 
+  const dashboardCards = [
+    {
+      title: "Available Containers",
+      description: "Browse containers with available cargo space.",
+      button: "Browse Containers",
+      path: "/exporter/containers",
+    },
+    {
+      title: "My Bookings",
+      description: "View and manage your shipment bookings.",
+      button: "View Bookings",
+      path: "/exporter/bookings",
+    },
+    {
+      title: "Track Shipment",
+      description: "Track the location of your active shipments.",
+      button: "Track Shipment",
+      path: "/exporter/tracking",
+    },
+    {
+      title: "AI Cargo Detection",
+      description:
+        "Upload cargo images and detect objects with bounding boxes and confidence scores.",
+      button: "Open AI Detection",
+      path: "/exporter/image-detection",
+    },
+    {
+      title: "Create Pickup Job",
+      description:
+        "Arrange first-mile transportation from your location to a consolidation depot.",
+      button: "Create Pickup Job",
+      path: "/pickup-jobs/create",
+    },
+    {
+      title: "My Pickup Jobs",
+      description:
+        "View your pickup jobs, assigned travellers, and delivery status.",
+      button: "View Pickup Jobs",
+      path: "/pickup-jobs/mine",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Navbar */}
       <nav className="bg-teal-700 px-6 py-4 text-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
           <h1
             className="cursor-pointer text-2xl font-bold"
             onClick={() => navigate("/")}
@@ -24,7 +65,7 @@ const ExporterDashboard = () => {
             CargoShare
           </h1>
 
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-4">
             <button
               onClick={() => navigate("/exporter/dashboard")}
               className="hover:text-teal-200"
@@ -56,87 +97,35 @@ const ExporterDashboard = () => {
         </div>
       </nav>
 
-      {/* Dashboard content */}
       <main className="mx-auto max-w-7xl px-6 py-8">
         <h2 className="text-3xl font-bold text-gray-800">Exporter Dashboard</h2>
 
         <p className="mt-2 text-gray-600">
-          Manage your shipments and bookings from here.
+          Manage shipments, bookings, cargo detection, and first-mile pickup.
         </p>
 
-        {/* Dashboard cards */}
-        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl bg-white p-6 shadow">
-            <h3 className="text-lg font-semibold text-gray-800">
-              Available Containers
-            </h3>
-
-            <p className="mt-2 text-sm text-gray-500">
-              Browse containers with available space.
-            </p>
-
-            <button
-              onClick={() => navigate("/exporter/containers")}
-              className="mt-5 rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {dashboardCards.map((card) => (
+            <div
+              key={card.title}
+              className="flex flex-col rounded-xl bg-white p-6 shadow transition hover:-translate-y-1 hover:shadow-lg"
             >
-              Browse Containers
-            </button>
-          </div>
-
-          <div className="rounded-xl bg-white p-6 shadow">
-            <h3 className="text-lg font-semibold text-gray-800">My Bookings</h3>
-
-            <p className="mt-2 text-sm text-gray-500">
-              View and manage your shipment bookings.
-            </p>
-
-            <button
-              onClick={() => navigate("/exporter/bookings")}
-              className="mt-5 rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
-            >
-              View Bookings
-            </button>
-          </div>
-
-          <div className="rounded-xl bg-white p-6 shadow">
-            <h3 className="text-lg font-semibold text-gray-800">
-              Track Shipment
-            </h3>
-
-            <p className="mt-2 text-sm text-gray-500">
-              Track the location of your active shipments.
-            </p>
-
-            <button
-              onClick={() => navigate("/exporter/tracking")}
-              className="mt-5 rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
-            >
-              Track Shipment
-            </button>
-          </div>
-
-          {/* AI Cargo Detection */}
-          <div className="rounded-xl border border-teal-100 bg-white p-6 shadow transition hover:-translate-y-1 hover:shadow-lg">
-            <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-800">
-                AI Cargo Detection
+                {card.title}
               </h3>
 
-              <span className="rounded-lg bg-teal-50 px-3 py-2 text-xl">✦</span>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-gray-500">
+                {card.description}
+              </p>
+
+              <button
+                onClick={() => navigate(card.path)}
+                className="mt-5 self-start rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
+              >
+                {card.button}
+              </button>
             </div>
-
-            <p className="mt-2 text-sm text-gray-500">
-              Upload cargo images and use AI to detect objects with bounding
-              boxes and confidence scores.
-            </p>
-
-            <button
-              onClick={() => navigate("/exporter/image-detection")}
-              className="mt-5 rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
-            >
-              Open AI Detection
-            </button>
-          </div>
+          ))}
         </div>
       </main>
     </div>

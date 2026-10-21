@@ -11,6 +11,8 @@ import cookieParser from "cookie-parser";
 import messageRoutes from "./routes/messageRoutes.js";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import tripRoutes from "./routes/tripRoutes.js";
+import pickupJobRoutes from "./routes/pickupJobRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -31,6 +33,8 @@ app.use("/api/containers", containerRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/trips", tripRoutes);
+app.use("/api/pickup-jobs", pickupJobRoutes);
 
 // app.get("/api/auth/me", authMiddleware, (req, res) => {
 //   res.json({

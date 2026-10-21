@@ -26,6 +26,12 @@ import Home from "./pages/Home.jsx";
 import Profile from "./pages/Profile.jsx";
 import Chat from "./pages/Chat.jsx";
 import ImageDetection from "./pages/exporter/ImageDetection.jsx";
+import CreateTrip from "./pages/trips/CreateTrip.jsx";
+import CreatePickupJob from "./pages/pickupJobs/CreatePickupJob.jsx";
+import MyPickupJobs from "./pages/pickupJobs/MyPickupJobs.jsx";
+import OpenPickupJobs from "./pages/pickupJobs/OpenPickupJobs.jsx";
+import MyTrips from "./pages/trips/MyTrips.jsx";
+import TripMatches from "./pages/trips/TripMatches.jsx";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -219,6 +225,62 @@ const App = () => {
           element={
             <RoleProtectedRoute allowedRoles={["provider"]}>
               <UpdateContainerLocation />
+            </RoleProtectedRoute>
+          }
+        />
+
+        {/* First-Mile Pickup */}
+        <Route
+          path="/trips/create"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter", "provider"]}>
+              <CreateTrip />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/trips/mine"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter", "provider"]}>
+              <MyTrips />
+            </RoleProtectedRoute>
+          }
+        />
+
+        {/* First-Mile Pickup */}
+        <Route
+          path="/pickup-jobs/create"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter"]}>
+              <CreatePickupJob />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/pickup-jobs/mine"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter"]}>
+              <MyPickupJobs />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/pickup-jobs/open"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter", "provider"]}>
+              <OpenPickupJobs />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/trips/matches"
+          element={
+            <RoleProtectedRoute allowedRoles={["exporter", "provider"]}>
+              <TripMatches />
             </RoleProtectedRoute>
           }
         />

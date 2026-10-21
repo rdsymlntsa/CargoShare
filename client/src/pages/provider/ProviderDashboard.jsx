@@ -16,21 +16,20 @@ const ProviderDashboard = () => {
     {
       title: "Create Container",
       description:
-        "Add a container, define its route and checkpoints, and make available cargo space accessible to exporters.",
+        "Add a container, define its route and checkpoints, and publish available cargo space.",
       button: "Create Container",
       path: "/provider/containers/create",
     },
     {
       title: "My Containers",
       description:
-        "Manage your containers, review segment-wise capacities, and view route schedules.",
+        "Manage your containers, segment capacities, and route schedules.",
       button: "View Containers",
       path: "/provider/containers",
     },
     {
       title: "Booking Requests",
-      description:
-        "Review exporter bookings and approve or reject requests for specific route segments.",
+      description: "Review exporter bookings and approve or reject requests.",
       button: "View Requests",
       path: "/provider/bookings",
       secondaryButton: "Booking History",
@@ -39,7 +38,7 @@ const ProviderDashboard = () => {
     {
       title: "Track Shipments",
       description:
-        "Monitor in-transit containers, update GPS locations, and review route checkpoints.",
+        "Monitor in-transit containers and update shipment locations.",
       button: "Track Shipments",
       path: "/provider/tracking",
     },
@@ -48,6 +47,26 @@ const ProviderDashboard = () => {
       description: "View and manage your provider profile.",
       button: "View Profile",
       path: "/provider/profile",
+    },
+    {
+      title: "Create Trip",
+      description:
+        "Publish your travel route, spare cargo capacity, and acceptable detour limits.",
+      button: "Create Trip",
+      path: "/trips/create",
+    },
+    {
+      title: "My Trips",
+      description: "Review your trips and manage routes you have published.",
+      button: "View My Trips",
+      path: "/trips/mine",
+    },
+    {
+      title: "Find Pickup Matches",
+      description:
+        "Find pickup jobs that fit your trip route, spare capacity, and detour limits.",
+      button: "Find Matches",
+      path: "/trips/matches",
     },
   ];
 
@@ -86,7 +105,7 @@ const ProviderDashboard = () => {
 
             <button
               onClick={handleLogout}
-              className="rounded bg-white px-4 py-2 text-teal-700 hover:bg-gray-100"
+              className="rounded-lg bg-white px-4 py-2 text-teal-700 hover:bg-gray-100"
             >
               Logout
             </button>
@@ -105,8 +124,8 @@ const ProviderDashboard = () => {
           </h2>
 
           <p className="mt-2 text-gray-600">
-            Manage containers, route segments, bookings, and shipment tracking
-            from one place.
+            Manage containers, bookings, shipment tracking, and first-mile
+            trips.
           </p>
         </div>
 
@@ -116,9 +135,8 @@ const ProviderDashboard = () => {
           </h3>
 
           <p className="mt-2 max-w-3xl text-gray-600">
-            Define intermediate checkpoints, publish available capacity for each
-            segment, handle bookings, and track shipments while they are in
-            transit.
+            Publish container capacity, manage bookings, track shipments, or
+            offer spare capacity on your own trips to carry goods.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-3">
@@ -134,6 +152,13 @@ const ProviderDashboard = () => {
               className="rounded-lg border border-teal-600 px-5 py-3 font-medium text-teal-700 hover:bg-teal-50"
             >
               Track Shipments
+            </button>
+
+            <button
+              onClick={() => navigate("/trips/create")}
+              className="rounded-lg bg-gray-800 px-5 py-3 font-medium text-white hover:bg-gray-700"
+            >
+              Offer Trip Capacity
             </button>
           </div>
         </div>
